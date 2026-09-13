@@ -261,7 +261,7 @@ describe("Thai audio", () => {
     await Promise.resolve();
     expect(resolved).toBe(false);
 
-    (audioInstance as { onended: (() => void) | null }).onended?.();
+    (audioInstance as unknown as { onended: (() => void) | null }).onended?.();
     await speech;
     expect(resolved).toBe(true);
   });
@@ -284,7 +284,7 @@ describe("Thai audio", () => {
 
     const { speakThaiAndWait } = await import("./speech");
     const speech = speakThaiAndWait("ถูกต้อง เก่งมาก", 3000);
-    (audioInstance as { onerror: (() => void) | null }).onerror?.();
+    (audioInstance as unknown as { onerror: (() => void) | null }).onerror?.();
     await expect(speech).resolves.toBeUndefined();
   });
 
