@@ -80,6 +80,28 @@ describe("Thai audio", () => {
     ["เลือกเงินให้ครบ 25 บาท", "/audio/th/l4-pay-25-question.m4a"],
     ["เลือกเงินให้ครบ 30 บาท", "/audio/th/l4-pay-30-question.m4a"],
     ["เลือกเงินให้ครบ 50 บาท", "/audio/th/l4-pay-50-question.m4a"],
+    ["ไปร้านค้าป้ารม แล้วเลือกขนมปัง ราคา 10 บาท", "/audio/th/l5-rom-bread-question.m4a"],
+    ["ไปสหกรณ์โรงเรียน แล้วเลือกสมุดเขียน ราคา 20 บาท", "/audio/th/l5-coop-notebook-question.m4a"],
+    ["ไปร้านค้าป้ารม แล้วเลือกน้ำส้มคั้น และ ขนมกรุบกรอบ ราคา 30 บาท", "/audio/th/l5-rom-juice-snack-question.m4a"],
+    ["ไปสหกรณ์โรงเรียน แล้วเลือกดินสอดำ และ นมสดกล่อง ราคา 30 บาท", "/audio/th/l5-coop-pencil-milk-question.m4a"],
+    ["หนูเลือกร้านและสินค้าที่อยากซื้อเองได้เลย", "/audio/th/l5-free-shopping-question.m4a"],
+    ["เลือกสินค้าที่อยากซื้อใส่ตะกร้า", "/audio/th/l5-free-items-question.m4a"],
+    ["เลือกขนมปัง ใส่ตะกร้า", "/audio/th/l5-bread-items-question.m4a"],
+    ["เลือกสมุดเขียน ใส่ตะกร้า", "/audio/th/l5-notebook-items-question.m4a"],
+    ["เลือกน้ำส้มคั้น และ ขนมกรุบกรอบ ใส่ตะกร้า", "/audio/th/l5-juice-snack-items-question.m4a"],
+    ["เลือกดินสอดำ และ นมสดกล่อง ใส่ตะกร้า", "/audio/th/l5-pencil-milk-items-question.m4a"],
+    ["ยอด 10 บาท เลือกเงินให้พอดี", "/audio/th/l5-pay-10-question.m4a"],
+    ["ยอด 20 บาท เลือกเงินให้พอดี", "/audio/th/l5-pay-20-question.m4a"],
+    ["ยอด 30 บาท เลือกเงินให้พอดี", "/audio/th/l5-pay-30-question.m4a"],
+    ["ยอด 40 บาท เลือกเงินให้พอดี", "/audio/th/l5-pay-40-question.m4a"],
+    ["ยอด 50 บาท เลือกเงินให้พอดี", "/audio/th/l5-pay-50-question.m4a"],
+    ["ยอด 60 บาท เลือกเงินให้พอดี", "/audio/th/l5-pay-60-question.m4a"],
+    ["เลือกเงินให้ครบ 60 บาทพอดีนะ", "/audio/th/hint-pay-60.m4a"],
+    ["คำใบ้: เลือกสมุดเขียนให้ครบ", "/audio/th/hint-l5-item-notebook.m4a"],
+    ["คำใบ้: เลือกน้ำส้มคั้น และ ขนมกรุบกรอบให้ครบ", "/audio/th/hint-l5-items-juice-snack-new.m4a"],
+    ["คำใบ้: เลือกดินสอดำ และ นมสดกล่องให้ครบ", "/audio/th/hint-l5-items-pencil-milk.m4a"],
+    ["ถูกต้อง ซื้อของสำเร็จ", "/audio/th/l5-purchase-correct.m4a"],
+    ["ยอดเยี่ยม หนูซื้อของครบ 5 ข้อแล้ว", "/audio/th/l5-complete.m4a"],
   ])("uses bundled audio for lesson prompt %s", async (text, audioPath) => {
     const play = vi.fn().mockResolvedValue(undefined);
     const AudioMock = vi.fn(function AudioMock(this: { play: typeof play; pause: () => void }) {
@@ -221,17 +243,15 @@ describe("Thai audio", () => {
     let audioInstance: { onended: (() => void) | null; onerror: (() => void) | null } | null = null;
     vi.stubGlobal(
       "Audio",
-      vi.fn(function AudioMock(this: {
-        play: () => Promise<void>;
-        pause: () => void;
-        onended: (() => void) | null;
-        onerror: (() => void) | null;
-      }) {
-        this.play = vi.fn().mockResolvedValue(undefined);
-        this.pause = vi.fn();
-        this.onended = null;
-        this.onerror = null;
-        audioInstance = this;
+      vi.fn(function AudioMock() {
+        const instance = {
+          play: vi.fn().mockResolvedValue(undefined),
+          pause: vi.fn(),
+          onended: null as (() => void) | null,
+          onerror: null as (() => void) | null,
+        };
+        audioInstance = instance;
+        return instance;
       }),
     );
 
@@ -250,17 +270,15 @@ describe("Thai audio", () => {
     let audioInstance: { onerror: (() => void) | null } | null = null;
     vi.stubGlobal(
       "Audio",
-      vi.fn(function AudioMock(this: {
-        play: () => Promise<void>;
-        pause: () => void;
-        onended: (() => void) | null;
-        onerror: (() => void) | null;
-      }) {
-        this.play = vi.fn().mockResolvedValue(undefined);
-        this.pause = vi.fn();
-        this.onended = null;
-        this.onerror = null;
-        audioInstance = this;
+      vi.fn(function AudioMock() {
+        const instance = {
+          play: vi.fn().mockResolvedValue(undefined),
+          pause: vi.fn(),
+          onended: null as (() => void) | null,
+          onerror: null as (() => void) | null,
+        };
+        audioInstance = instance;
+        return instance;
       }),
     );
 

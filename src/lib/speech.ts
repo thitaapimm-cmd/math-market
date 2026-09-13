@@ -89,6 +89,38 @@ const THAI_RECORDINGS: Readonly<Record<string, string>> = {
   "คำใบ้: เลือกน้ำผลไม้ และ คุกกี้ให้ครบ": "/audio/th/hint-l5-items-juice-cookie.m4a",
   "คำใบ้: เลือกดินสอ และ ยางลบให้ครบ": "/audio/th/hint-l5-items-pencil-eraser.m4a",
   "คำใบ้: เลือกนมสด และ แซนด์วิชให้ครบ": "/audio/th/hint-l5-items-milk-sandwich.m4a",
+  "ไปร้านค้าป้ารม แล้วเลือกขนมปัง ราคา 10 บาท":
+    "/audio/th/l5-rom-bread-question.m4a",
+  "ไปสหกรณ์โรงเรียน แล้วเลือกสมุดเขียน ราคา 20 บาท":
+    "/audio/th/l5-coop-notebook-question.m4a",
+  "ไปร้านค้าป้ารม แล้วเลือกน้ำส้มคั้น และ ขนมกรุบกรอบ ราคา 30 บาท":
+    "/audio/th/l5-rom-juice-snack-question.m4a",
+  "ไปสหกรณ์โรงเรียน แล้วเลือกดินสอดำ และ นมสดกล่อง ราคา 30 บาท":
+    "/audio/th/l5-coop-pencil-milk-question.m4a",
+  "หนูเลือกร้านและสินค้าที่อยากซื้อเองได้เลย":
+    "/audio/th/l5-free-shopping-question.m4a",
+  "เลือกสินค้าที่อยากซื้อใส่ตะกร้า":
+    "/audio/th/l5-free-items-question.m4a",
+  "เลือกขนมปัง ใส่ตะกร้า": "/audio/th/l5-bread-items-question.m4a",
+  "เลือกสมุดเขียน ใส่ตะกร้า": "/audio/th/l5-notebook-items-question.m4a",
+  "เลือกน้ำส้มคั้น และ ขนมกรุบกรอบ ใส่ตะกร้า":
+    "/audio/th/l5-juice-snack-items-question.m4a",
+  "เลือกดินสอดำ และ นมสดกล่อง ใส่ตะกร้า":
+    "/audio/th/l5-pencil-milk-items-question.m4a",
+  "ยอด 10 บาท เลือกเงินให้พอดี": "/audio/th/l5-pay-10-question.m4a",
+  "ยอด 20 บาท เลือกเงินให้พอดี": "/audio/th/l5-pay-20-question.m4a",
+  "ยอด 30 บาท เลือกเงินให้พอดี": "/audio/th/l5-pay-30-question.m4a",
+  "ยอด 40 บาท เลือกเงินให้พอดี": "/audio/th/l5-pay-40-question.m4a",
+  "ยอด 50 บาท เลือกเงินให้พอดี": "/audio/th/l5-pay-50-question.m4a",
+  "ยอด 60 บาท เลือกเงินให้พอดี": "/audio/th/l5-pay-60-question.m4a",
+  "เลือกเงินให้ครบ 60 บาทพอดีนะ": "/audio/th/hint-pay-60.m4a",
+  "คำใบ้: เลือกสมุดเขียนให้ครบ": "/audio/th/hint-l5-item-notebook.m4a",
+  "คำใบ้: เลือกน้ำส้มคั้น และ ขนมกรุบกรอบให้ครบ":
+    "/audio/th/hint-l5-items-juice-snack-new.m4a",
+  "คำใบ้: เลือกดินสอดำ และ นมสดกล่องให้ครบ":
+    "/audio/th/hint-l5-items-pencil-milk.m4a",
+  "ถูกต้อง ซื้อของสำเร็จ": "/audio/th/l5-purchase-correct.m4a",
+  "ยอดเยี่ยม หนูซื้อของครบ 5 ข้อแล้ว": "/audio/th/l5-complete.m4a",
 };
 
 let currentVoiceAudio: HTMLAudioElement | null = null;
