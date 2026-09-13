@@ -17,6 +17,10 @@ export function secondsBetween(start: number, end: number): number {
   return Math.max(0, Math.round((end - start) / 1000));
 }
 
+export function nowMs(): number {
+  return Date.now();
+}
+
 export interface NormalizedAttempt
   extends Omit<
     Attempt,

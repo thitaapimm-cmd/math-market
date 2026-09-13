@@ -7,7 +7,7 @@ import { MoneyCard } from "@/components/common/MoneyCard";
 import { HeaderNav } from "@/components/common/HeaderNav";
 import { celebrateCompletion, celebrateCorrect } from "@/lib/celebration";
 import { getMoneySpeech, type MoneyValue } from "@/lib/money";
-import { secondsBetween, shuffleQuestions } from "@/lib/learningSession";
+import { nowMs, secondsBetween, shuffleQuestions } from "@/lib/learningSession";
 import type { AttemptAnswer } from "@/types";
 
 const QUESTIONS = [
@@ -70,8 +70,8 @@ export default function PretestPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [questions, setQuestions] = useState(() => [...QUESTIONS]);
-  const sessionStartedAt = useRef(Date.now());
-  const questionStartedAt = useRef(Date.now());
+  const sessionStartedAt = useRef(0);
+  const questionStartedAt = useRef(0);
   const answers = useRef<AttemptAnswer[]>([]);
   const student = useMemo(
     () => (isMounted ? api.getCurrentStudent() : null),
@@ -79,10 +79,12 @@ export default function PretestPage() {
   );
 
   useEffect(() => {
-    setQuestions(shuffleQuestions(QUESTIONS));
-    sessionStartedAt.current = Date.now();
-    questionStartedAt.current = Date.now();
-    queueMicrotask(() => setIsMounted(true));
+    queueMicrotask(() => {
+      setQuestions(shuffleQuestions(QUESTIONS));
+      sessionStartedAt.current = nowMs();
+      questionStartedAt.current = nowMs();
+      setIsMounted(true);
+    });
   }, []);
 
   const currentQ = questions[currentIndex];
@@ -96,7 +98,7 @@ export default function PretestPage() {
 
   useEffect(() => {
     if (!isMounted || !student) return;
-    questionStartedAt.current = Date.now();
+    questionStartedAt.current = nowMs();
     speakThai(currentQ.question);
   }, [currentQ, isMounted, student]);
 
@@ -118,7 +120,7 @@ export default function PretestPage() {
     const q = QUESTIONS[currentIndex];
     const isCorrect = selectedAnswer === q.correct;
     const nextScore = isCorrect ? score + 1 : score;
-    const now = Date.now();
+    const now = nowMs();
     const nextAnswers: AttemptAnswer[] = [
       ...answers.current,
       {
@@ -151,7 +153,7 @@ export default function PretestPage() {
         setCurrentIndex(currentIndex + 1);
       } else {
         if (student) {
-          const completedAt = Date.now();
+          const completedAt = nowMs();
           api.recordAssessment({
             student_id: student.id,
             assessment_type: "pretest",
