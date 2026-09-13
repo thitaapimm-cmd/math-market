@@ -1,0 +1,106 @@
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import PretestPage from "./page";
+
+const { mockPlaySoundEffect, mockSpeakThai, mockRecordAssessment, mockRecordAttempt } = vi.hoisted(() => ({
+  mockPlaySoundEffect: vi.fn(),
+  mockSpeakThai: vi.fn(),
+  mockRecordAssessment: vi.fn(),
+  mockRecordAttempt: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("@/lib/storage", () => ({
+  api: {
+    getCurrentStudent: () => ({ id: "student-1", name: "ทดสอบ" }),
+    recordAssessment: mockRecordAssessment,
+    recordAttempt: mockRecordAttempt,
+  },
+}));
+vi.mock("@/lib/speech", () => ({
+  speakThai: mockSpeakThai,
+  playSoundEffect: mockPlaySoundEffect,
+}));
+vi.mock("@/lib/celebration", () => ({
+  celebrateCorrect: vi.fn(),
+  celebrateCompletion: vi.fn(),
+}));
+
+describe("Pretest answer confirmation", () => {
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(Math, "random").mockReturnValue(0.999);
+  });
+
+  it("keeps the current question until the selected answer is confirmed", async () => {
+    const user = userEvent.setup();
+    render(<PretestPage />);
+
+    await user.click(await screen.findByRole("button", { name: "10 บาท" }));
+    expect(screen.getByText("ข้อที่ 1 จาก 5")).toBeInTheDocument();
+    expect(mockPlaySoundEffect).toHaveBeenLastCalledWith("click");
+    expect(mockSpeakThai).toHaveBeenCalledWith("เหรียญ 10 บาท");
+
+    await user.click(screen.getByRole("button", { name: "ยืนยันคำตอบ" }));
+    expect(mockPlaySoundEffect).toHaveBeenLastCalledWith("correct");
+    expect(mockSpeakThai).toHaveBeenCalledWith(
+      expect.stringContaining("ถูกต้อง"),
+    );
+  });
+
+  it("shows and speaks the exact hint after a wrong confirmation", async () => {
+    const user = userEvent.setup();
+    render(<PretestPage />);
+
+    await waitFor(() =>
+      expect(mockSpeakThai).toHaveBeenCalledWith("นี่คือเงินกี่บาท?"),
+    );
+    await user.click(await screen.findByRole("button", { name: "5 บาท" }));
+    await user.click(screen.getByRole("button", { name: "ยืนยันคำตอบ" }));
+
+    const hint = "สังเกตตัวเลข 10 บนเหรียญนะจ๊ะ";
+    expect(screen.getByRole("status")).toHaveTextContent(hint);
+    expect(mockSpeakThai).toHaveBeenLastCalledWith(hint);
+  });
+
+  it("records timing and answer details for all five questions", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-13T00:00:00.000Z"));
+    render(<PretestPage />);
+    await act(async () => undefined);
+
+    for (const answer of [10, 20, 20, 30, 30]) {
+      fireEvent.click(screen.getByRole("button", { name: `${answer} บาท` }));
+      fireEvent.click(screen.getByRole("button", { name: "ยืนยันคำตอบ" }));
+      await act(async () => vi.advanceTimersByTime(1400));
+    }
+
+    expect(mockRecordAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 0,
+        activity_type: "pretest",
+        score: 5,
+        total_questions: 5,
+        wrong_count: 0,
+        duration_seconds: 7,
+        answers: expect.arrayContaining([
+          expect.objectContaining({
+            question_id: "q1",
+            first_try_correct: true,
+            wrong_count: 0,
+            duration_seconds: expect.any(Number),
+          }),
+        ]),
+      }),
+    );
+    expect(mockRecordAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({ score: 5, total_score: 5 }),
+    );
+  });
+});
