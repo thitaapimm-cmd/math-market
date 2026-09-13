@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/storage";
-import { speakThai, playSoundEffect } from "@/lib/speech";
+import { speakThai, speakThaiAndWait, playSoundEffect } from "@/lib/speech";
 import { MoneyCard } from "@/components/common/MoneyCard";
 import { HeaderNav } from "@/components/common/HeaderNav";
 import { celebrateCompletion, celebrateCorrect } from "@/lib/celebration";
@@ -114,10 +114,10 @@ export default function PretestPage() {
     }
   };
 
-  const confirmAnswer = () => {
+  const confirmAnswer = async () => {
     if (selectedAnswer === null || isChecking) return;
 
-    const q = QUESTIONS[currentIndex];
+    const q = currentQ;
     const isCorrect = selectedAnswer === q.correct;
     const nextScore = isCorrect ? score + 1 : score;
     const now = nowMs();
@@ -142,50 +142,46 @@ export default function PretestPage() {
 
     const resultText = isCorrect ? "ถูกต้อง เก่งมาก" : `💡 คำใบ้: ${q.hint}`;
     setFeedback(resultText);
-    speakThai(isCorrect ? "ถูกต้อง เก่งมาก" : q.hint);
+    await speakThaiAndWait(isCorrect ? "ถูกต้อง เก่งมาก" : q.hint);
 
-    setTimeout(() => {
-      setSelectedAnswer(null);
-      setFeedback(null);
-      setIsChecking(false);
+    setSelectedAnswer(null);
+    setFeedback(null);
+    setIsChecking(false);
 
-      if (currentIndex + 1 < QUESTIONS.length) {
-        setCurrentIndex(currentIndex + 1);
-      } else {
-        if (student) {
-          const completedAt = nowMs();
-          api.recordAssessment({
-            student_id: student.id,
-            assessment_type: "pretest",
-            score: nextScore,
-            total_score: QUESTIONS.length,
-          });
-          api.recordAttempt({
-            student_id: student.id,
-            level: 0,
-            activity_type: "pretest",
-            mode: "learning",
-            score: nextScore,
-            total_questions: QUESTIONS.length,
-            hint_count: nextAnswers.filter((answer) => answer.hint_used).length,
-            wrong_count: nextAnswers.reduce(
-              (total, answer) => total + (answer.wrong_count ?? 0),
-              0,
-            ),
-            duration_seconds: secondsBetween(
-              sessionStartedAt.current,
-              completedAt,
-            ),
-            started_at: new Date(sessionStartedAt.current).toISOString(),
-            completed_at: new Date(completedAt).toISOString(),
-            answers: nextAnswers,
-          });
-        }
-        celebrateCompletion();
-        speakThai("เก่งมาก พร้อมเริ่มเรียนแล้ว!");
-        router.push("/student/path");
-      }
-    }, 1400);
+    if (currentIndex + 1 < questions.length) {
+      setCurrentIndex(currentIndex + 1);
+      return;
+    }
+
+    if (student) {
+      const completedAt = nowMs();
+      api.recordAssessment({
+        student_id: student.id,
+        assessment_type: "pretest",
+        score: nextScore,
+        total_score: questions.length,
+      });
+      api.recordAttempt({
+        student_id: student.id,
+        level: 0,
+        activity_type: "pretest",
+        mode: "learning",
+        score: nextScore,
+        total_questions: questions.length,
+        hint_count: nextAnswers.filter((answer) => answer.hint_used).length,
+        wrong_count: nextAnswers.reduce(
+          (total, answer) => total + (answer.wrong_count ?? 0),
+          0,
+        ),
+        duration_seconds: secondsBetween(sessionStartedAt.current, completedAt),
+        started_at: new Date(sessionStartedAt.current).toISOString(),
+        completed_at: new Date(completedAt).toISOString(),
+        answers: nextAnswers,
+      });
+    }
+    celebrateCompletion();
+    speakThai("เก่งมาก พร้อมเริ่มเรียนแล้ว!");
+    router.push("/student/path");
   };
 
   return (
@@ -197,7 +193,7 @@ export default function PretestPage() {
 
       <div className="w-full max-w-xl bg-white rounded-3xl p-8 shadow-xl border-2 border-sky-200 text-center">
         <div className="text-slate-500 font-bold mb-4">
-          ข้อที่ {currentIndex + 1} จาก {QUESTIONS.length}
+          ข้อที่ {currentIndex + 1} จาก {questions.length}
         </div>
 
         <h2 className="text-2xl font-black text-slate-800 mb-6">
