@@ -142,6 +142,34 @@ export const api = {
     getStorageData("current_student", null),
   setCurrentStudent: (student: Student | null) =>
     setStorageData("current_student", student),
+  deleteStudent: (studentId: string): void => {
+    setStorageData(
+      "students",
+      getStudents().filter((student) => student.id !== studentId),
+    );
+    setStorageData(
+      "progress",
+      getStorageData<StudentProgress[]>("progress", []).filter(
+        (progress) => progress.student_id !== studentId,
+      ),
+    );
+    setStorageData(
+      "assessments",
+      getStorageData<AssessmentResult[]>("assessments", []).filter(
+        (assessment) => assessment.student_id !== studentId,
+      ),
+    );
+    setStorageData(
+      "attempts",
+      getStorageData<Attempt[]>("attempts", []).filter(
+        (attempt) => attempt.student_id !== studentId,
+      ),
+    );
+    const currentStudent = getStorageData<Student | null>("current_student", null);
+    if (currentStudent?.id === studentId) {
+      setStorageData("current_student", null);
+    }
+  },
 
   getShops: (): Shop[] => getStorageData("shops", INITIAL_SHOPS),
   getProducts: (): Product[] => getStorageData("products", INITIAL_PRODUCTS),

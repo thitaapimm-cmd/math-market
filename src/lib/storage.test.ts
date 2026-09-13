@@ -108,3 +108,47 @@ describe("api attempts", () => {
     expect(api.getAttempts("student-1")).toEqual([legacyAttempt]);
   });
 });
+
+describe("api.deleteStudent", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("deletes one student and only that student's related records", () => {
+    const studentA = {
+      id: "student-a",
+      student_code: "A",
+      name: "น้องเอ",
+      classroom: "",
+      avatar_url: "/avatars/student-01.png",
+      created_at: "2026-09-13T00:00:00.000Z",
+    };
+    const studentB = { ...studentA, id: "student-b", student_code: "B", name: "น้องบี" };
+    const progressA = { student_id: "student-a", level: 1, status: "completed", best_score: 5, first_score: 5, attempt_count: 1 };
+    const progressB = { ...progressA, student_id: "student-b" };
+    const assessmentA = { id: "assessment-a", student_id: "student-a", assessment_type: "pretest", score: 5, total_score: 5, created_at: "2026-09-13T00:00:00.000Z" };
+    const assessmentB = { ...assessmentA, id: "assessment-b", student_id: "student-b" };
+    const attemptA = { id: "attempt-a", student_id: "student-a", level: 1, activity_type: "test", mode: "learning", score: 5, total_questions: 5, hint_count: 0, duration_seconds: 20, answers: [], created_at: "2026-09-13T00:00:00.000Z" };
+    const attemptB = { ...attemptA, id: "attempt-b", student_id: "student-b" };
+    localStorage.setItem("math_market_students", JSON.stringify([studentA, studentB]));
+    localStorage.setItem("math_market_progress", JSON.stringify([progressA, progressB]));
+    localStorage.setItem("math_market_assessments", JSON.stringify([assessmentA, assessmentB]));
+    localStorage.setItem("math_market_attempts", JSON.stringify([attemptA, attemptB]));
+    localStorage.setItem("math_market_current_student", JSON.stringify(studentA));
+
+    api.deleteStudent("student-a");
+
+    expect(api.getStudents()).toEqual([studentB]);
+    expect(JSON.parse(localStorage.getItem("math_market_progress") || "[]")).toEqual([progressB]);
+    expect(api.getAssessments()).toEqual([assessmentB]);
+    expect(api.getAttempts()).toEqual([attemptB]);
+    expect(api.getCurrentStudent()).toBeNull();
+  });
+
+  it("does not clear a different current student", () => {
+    const current = { id: "student-b", student_code: "B", name: "น้องบี", classroom: "", avatar_url: "/avatars/student-02.png", created_at: "2026-09-13T00:00:00.000Z" };
+    localStorage.setItem("math_market_current_student", JSON.stringify(current));
+
+    api.deleteStudent("student-a");
+
+    expect(api.getCurrentStudent()).toEqual(current);
+  });
+});
