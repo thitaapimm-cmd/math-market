@@ -6,6 +6,7 @@ describe("Thai audio", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -179,5 +180,81 @@ describe("Thai audio", () => {
 
     expect(AudioContextMock).toHaveBeenCalledOnce();
     expect(context.close).not.toHaveBeenCalled();
+  });
+
+  it("waits for a bundled recording to end", async () => {
+    let audioInstance: { onended: (() => void) | null; onerror: (() => void) | null } | null = null;
+    vi.stubGlobal(
+      "Audio",
+      vi.fn(function AudioMock(this: {
+        play: () => Promise<void>;
+        pause: () => void;
+        onended: (() => void) | null;
+        onerror: (() => void) | null;
+      }) {
+        this.play = vi.fn().mockResolvedValue(undefined);
+        this.pause = vi.fn();
+        this.onended = null;
+        this.onerror = null;
+        audioInstance = this;
+      }),
+    );
+
+    const { speakThaiAndWait } = await import("./speech");
+    let resolved = false;
+    const speech = speakThaiAndWait("ถูกต้อง เก่งมาก", 3000).then(() => { resolved = true; });
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    (audioInstance as { onended: (() => void) | null }).onended?.();
+    await speech;
+    expect(resolved).toBe(true);
+  });
+
+  it("resolves awaited speech on an audio error", async () => {
+    let audioInstance: { onerror: (() => void) | null } | null = null;
+    vi.stubGlobal(
+      "Audio",
+      vi.fn(function AudioMock(this: {
+        play: () => Promise<void>;
+        pause: () => void;
+        onended: (() => void) | null;
+        onerror: (() => void) | null;
+      }) {
+        this.play = vi.fn().mockResolvedValue(undefined);
+        this.pause = vi.fn();
+        this.onended = null;
+        this.onerror = null;
+        audioInstance = this;
+      }),
+    );
+
+    const { speakThaiAndWait } = await import("./speech");
+    const speech = speakThaiAndWait("ถูกต้อง เก่งมาก", 3000);
+    (audioInstance as { onerror: (() => void) | null }).onerror?.();
+    await expect(speech).resolves.toBeUndefined();
+  });
+
+  it("uses a timeout so awaited speech cannot block the lesson", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "Audio",
+      vi.fn(function AudioMock(this: {
+        play: () => Promise<void>;
+        pause: () => void;
+        onended: (() => void) | null;
+        onerror: (() => void) | null;
+      }) {
+        this.play = vi.fn().mockResolvedValue(undefined);
+        this.pause = vi.fn();
+        this.onended = null;
+        this.onerror = null;
+      }),
+    );
+
+    const { speakThaiAndWait } = await import("./speech");
+    const speech = speakThaiAndWait("ถูกต้อง เก่งมาก", 250);
+    await vi.advanceTimersByTimeAsync(250);
+    await expect(speech).resolves.toBeUndefined();
   });
 });

@@ -108,6 +108,51 @@ export const speakThai = (text: string) => {
   speakWithBrowserVoice(text);
 };
 
+export const speakThaiAndWait = (
+  text: string,
+  fallbackMs = 5000,
+): Promise<void> => {
+  if (typeof window === "undefined") return Promise.resolve();
+
+  const recording = THAI_RECORDINGS[text];
+  if (!recording || typeof Audio === "undefined") {
+    speakWithBrowserVoice(text);
+    return Promise.resolve();
+  }
+
+  window.speechSynthesis?.cancel();
+  currentVoiceAudio?.pause();
+
+  const audio = new Audio(recording);
+  currentVoiceAudio = audio;
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const timeout = window.setTimeout(() => settle(), fallbackMs);
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      audio.onended = null;
+      audio.onerror = null;
+      if (currentVoiceAudio === audio) currentVoiceAudio = null;
+      resolve();
+    };
+
+    audio.onended = settle;
+    audio.onerror = () => {
+      if (currentVoiceAudio === audio) currentVoiceAudio = null;
+      speakWithBrowserVoice(text);
+      settle();
+    };
+    void audio.play().catch(() => {
+      if (currentVoiceAudio === audio) currentVoiceAudio = null;
+      speakWithBrowserVoice(text);
+      settle();
+    });
+  });
+};
+
 type FeedbackSound = "correct" | "wrong" | "click" | "celebrate";
 
 const addTone = (
