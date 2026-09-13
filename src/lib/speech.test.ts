@@ -61,6 +61,41 @@ describe("Thai audio", () => {
   });
 
   it.each([
+    ["นมสดกล่อง ราคา 20 บาท หนูจะเลือกเงินใบไหน?", "/audio/th/l2-milk-20-question.m4a"],
+    ["ขนมปัง ราคา 10 บาท หนูจะเลือกเงินใบไหน?", "/audio/th/l2-bread-10-question.m4a"],
+    ["น้ำผลไม้ ราคา 20 บาท หนูจะเลือกเงินใบไหน?", "/audio/th/l2-juice-20-question.m4a"],
+    ["สมุดบันทึก ราคา 20 บาท หนูจะเลือกเงินใบไหน?", "/audio/th/l2-notebook-20-question.m4a"],
+    ["ดินสอ ราคา 10 บาท หนูจะเลือกเงินใบไหน?", "/audio/th/l2-pencil-10-question.m4a"],
+    ["ขนมกล่องโต ราคา 30 บาท เลือกเงินให้พอดี", "/audio/th/l3-cookie-30-question.m4a"],
+    ["สมุดระบายสี ราคา 40 บาท เลือกเงินให้พอดี", "/audio/th/l3-coloring-book-40-question.m4a"],
+    ["น้ำผลไม้ปั่น ราคา 25 บาท เลือกเงินให้พอดี", "/audio/th/l3-juice-25-question.m4a"],
+    ["แซนด์วิช ราคา 35 บาท เลือกเงินให้พอดี", "/audio/th/l3-sandwich-35-question.m4a"],
+    ["กล่องดินสอ ราคา 50 บาท เลือกเงินให้พอดี", "/audio/th/l3-pencil-case-50-question.m4a"],
+    ["นม 20 บาท กับ ขนมปัง 10 บาท รวมทั้งหมดกี่บาท?", "/audio/th/l4-milk-bread-question.m4a"],
+    ["ดินสอ 10 บาท กับ สมุด 20 บาท รวมทั้งหมดกี่บาท?", "/audio/th/l4-pencil-book-question.m4a"],
+    ["น้ำผลไม้ 20 บาท กับ คุกกี้ 5 บาท รวมทั้งหมดกี่บาท?", "/audio/th/l4-juice-cookie-question.m4a"],
+    ["ยางลบ 5 บาท กับ ไม้บรรทัด 10 บาท รวมทั้งหมดกี่บาท?", "/audio/th/l4-eraser-ruler-question.m4a"],
+    ["สีไม้ 30 บาท กับ สมุดวาดเขียน 20 บาท รวมทั้งหมดกี่บาท?", "/audio/th/l4-color-book-question.m4a"],
+    ["เลือกเงินให้ครบ 15 บาท", "/audio/th/l4-pay-15-question.m4a"],
+    ["เลือกเงินให้ครบ 25 บาท", "/audio/th/l4-pay-25-question.m4a"],
+    ["เลือกเงินให้ครบ 30 บาท", "/audio/th/l4-pay-30-question.m4a"],
+    ["เลือกเงินให้ครบ 50 บาท", "/audio/th/l4-pay-50-question.m4a"],
+  ])("uses bundled audio for lesson prompt %s", async (text, audioPath) => {
+    const play = vi.fn().mockResolvedValue(undefined);
+    const AudioMock = vi.fn(function AudioMock(this: { play: typeof play; pause: () => void }) {
+      this.play = play;
+      this.pause = vi.fn();
+    });
+    vi.stubGlobal("Audio", AudioMock);
+
+    const { speakThai } = await import("./speech");
+    speakThai(text);
+
+    expect(AudioMock).toHaveBeenCalledWith(audioPath);
+    expect(play).toHaveBeenCalledOnce();
+  });
+
+  it.each([
     ["เลือกเงินให้ครบ 30 บาทพอดีนะ", "/audio/th/hint-pay-30.m4a"],
     ["ลองบวก 20 บาท กับ 10 บาท รวมกันอีกครั้งนะ", "/audio/th/hint-l4-sum-30.m4a"],
     ["คำใบ้: โจทย์บอกให้ไปร้านค้าป้ารม", "/audio/th/hint-l5-shop-local.m4a"],

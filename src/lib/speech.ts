@@ -35,6 +35,40 @@ const THAI_RECORDINGS: Readonly<Record<string, string>> = {
   "น้ำผลไม้ 20 บาท ใช้เงิน 20 บาทจ้า": "/audio/th/hint-l2-juice-20.m4a",
   "สมุด 20 บาท ตรงกับเงิน 20 บาทพอดีเลย": "/audio/th/hint-l2-book-20.m4a",
   "ดินสอ 10 บาท ใช้เหรียญ 10 บาท": "/audio/th/hint-l2-pencil-10.m4a",
+  "นมสดกล่อง ราคา 20 บาท หนูจะเลือกเงินใบไหน?":
+    "/audio/th/l2-milk-20-question.m4a",
+  "ขนมปัง ราคา 10 บาท หนูจะเลือกเงินใบไหน?":
+    "/audio/th/l2-bread-10-question.m4a",
+  "น้ำผลไม้ ราคา 20 บาท หนูจะเลือกเงินใบไหน?":
+    "/audio/th/l2-juice-20-question.m4a",
+  "สมุดบันทึก ราคา 20 บาท หนูจะเลือกเงินใบไหน?":
+    "/audio/th/l2-notebook-20-question.m4a",
+  "ดินสอ ราคา 10 บาท หนูจะเลือกเงินใบไหน?":
+    "/audio/th/l2-pencil-10-question.m4a",
+  "ขนมกล่องโต ราคา 30 บาท เลือกเงินให้พอดี":
+    "/audio/th/l3-cookie-30-question.m4a",
+  "สมุดระบายสี ราคา 40 บาท เลือกเงินให้พอดี":
+    "/audio/th/l3-coloring-book-40-question.m4a",
+  "น้ำผลไม้ปั่น ราคา 25 บาท เลือกเงินให้พอดี":
+    "/audio/th/l3-juice-25-question.m4a",
+  "แซนด์วิช ราคา 35 บาท เลือกเงินให้พอดี":
+    "/audio/th/l3-sandwich-35-question.m4a",
+  "กล่องดินสอ ราคา 50 บาท เลือกเงินให้พอดี":
+    "/audio/th/l3-pencil-case-50-question.m4a",
+  "นม 20 บาท กับ ขนมปัง 10 บาท รวมทั้งหมดกี่บาท?":
+    "/audio/th/l4-milk-bread-question.m4a",
+  "ดินสอ 10 บาท กับ สมุด 20 บาท รวมทั้งหมดกี่บาท?":
+    "/audio/th/l4-pencil-book-question.m4a",
+  "น้ำผลไม้ 20 บาท กับ คุกกี้ 5 บาท รวมทั้งหมดกี่บาท?":
+    "/audio/th/l4-juice-cookie-question.m4a",
+  "ยางลบ 5 บาท กับ ไม้บรรทัด 10 บาท รวมทั้งหมดกี่บาท?":
+    "/audio/th/l4-eraser-ruler-question.m4a",
+  "สีไม้ 30 บาท กับ สมุดวาดเขียน 20 บาท รวมทั้งหมดกี่บาท?":
+    "/audio/th/l4-color-book-question.m4a",
+  "เลือกเงินให้ครบ 15 บาท": "/audio/th/l4-pay-15-question.m4a",
+  "เลือกเงินให้ครบ 25 บาท": "/audio/th/l4-pay-25-question.m4a",
+  "เลือกเงินให้ครบ 30 บาท": "/audio/th/l4-pay-30-question.m4a",
+  "เลือกเงินให้ครบ 50 บาท": "/audio/th/l4-pay-50-question.m4a",
   "เลือกเงินให้ครบ 10 บาทพอดีนะ": "/audio/th/hint-pay-10.m4a",
   "เลือกเงินให้ครบ 15 บาทพอดีนะ": "/audio/th/hint-pay-15.m4a",
   "เลือกเงินให้ครบ 20 บาทพอดีนะ": "/audio/th/hint-pay-20.m4a",

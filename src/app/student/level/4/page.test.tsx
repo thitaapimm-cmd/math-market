@@ -54,4 +54,18 @@ describe("Level 4 two-step exercises", () => {
     expect(screen.getByRole("status")).toHaveTextContent(hint);
     expect(mockSpeakThai).toHaveBeenLastCalledWith(hint);
   });
+
+  it("makes the selected total visually and semantically obvious", async () => {
+    const user = userEvent.setup();
+    render(<Level4Page />);
+
+    const choice = await screen.findByRole("button", { name: "20 บาท" });
+    expect(choice).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(choice);
+
+    expect(choice).toHaveAttribute("aria-pressed", "true");
+    expect(choice).toHaveTextContent("เลือกแล้ว");
+    expect(choice).toHaveClass("bg-orange-600", "text-white", "ring-4");
+  });
 });
