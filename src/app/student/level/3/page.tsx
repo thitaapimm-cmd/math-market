@@ -128,10 +128,7 @@ export default function Level3Page() {
 
     if (totalSelected !== currentQ.price) {
       playSoundEffect("wrong");
-      const hint =
-        totalSelected < currentQ.price
-          ? `ตอนนี้มี ${totalSelected} บาท ยังขาดอีก ${currentQ.price - totalSelected} บาท ลองเพิ่มเงินดูนะ`
-          : `ตอนนี้มี ${totalSelected} บาท เกินราคา ${totalSelected - currentQ.price} บาท ลองลดเงินดูนะ`;
+      const hint = `เลือกเงินให้ครบ ${currentQ.price} บาทพอดีนะ`;
       setFeedback(hint);
       setQuestionWrongCount((count) => count + 1);
       speakThai(hint);

@@ -63,7 +63,7 @@ describe("Level 3 flexible payment", () => {
     expect(mockPlaySoundEffect).toHaveBeenLastCalledWith("correct");
   });
 
-  it("reads the question and speaks the exact visible difference hint", async () => {
+  it("reads the question and speaks the exact visible payment hint", async () => {
     const user = userEvent.setup();
     render(<Level3Page />);
 
@@ -77,7 +77,7 @@ describe("Level 3 flexible payment", () => {
     );
     await user.click(screen.getByRole("button", { name: "จ่ายเงิน" }));
 
-    const hint = "ตอนนี้มี 10 บาท ยังขาดอีก 20 บาท ลองเพิ่มเงินดูนะ";
+    const hint = "เลือกเงินให้ครบ 30 บาทพอดีนะ";
     expect(screen.getByRole("status")).toHaveTextContent(hint);
     expect(mockSpeakThai).toHaveBeenLastCalledWith(hint);
   });

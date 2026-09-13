@@ -59,6 +59,25 @@ describe("Thai audio", () => {
     expect(play).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    ["เลือกเงินให้ครบ 30 บาทพอดีนะ", "/audio/th/hint-pay-30.m4a"],
+    ["ลองบวก 20 บาท กับ 10 บาท รวมกันอีกครั้งนะ", "/audio/th/hint-l4-sum-30.m4a"],
+    ["คำใบ้: โจทย์บอกให้ไปร้านค้าป้ารม", "/audio/th/hint-l5-shop-local.m4a"],
+  ])("uses bundled audio for later-level hint %s", async (text, audioPath) => {
+    const play = vi.fn().mockResolvedValue(undefined);
+    const AudioMock = vi.fn(function AudioMock(this: { play: typeof play; pause: () => void }) {
+      this.play = play;
+      this.pause = vi.fn();
+    });
+    vi.stubGlobal("Audio", AudioMock);
+
+    const { speakThai } = await import("./speech");
+    speakThai(text);
+
+    expect(AudioMock).toHaveBeenCalledWith(audioPath);
+    expect(play).toHaveBeenCalledOnce();
+  });
+
   it("chooses an installed th-TH voice for dynamic speech", async () => {
     const thaiVoice = { lang: "th-TH", name: "Kanya" } as SpeechSynthesisVoice;
     const englishVoice = { lang: "en-US", name: "Samantha" } as SpeechSynthesisVoice;
