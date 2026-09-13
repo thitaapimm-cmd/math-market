@@ -1,0 +1,257 @@
+import {
+  Student,
+  Shop,
+  Product,
+  StudentProgress,
+  Attempt,
+  AssessmentResult,
+} from "@/types";
+import { isStudentAvatarPresetPath } from "@/lib/studentAvatars";
+
+const INITIAL_STUDENTS: Student[] = [];
+
+const INITIAL_SHOPS: Shop[] = [
+  {
+    id: "shop_rom",
+    name: "ร้านค้าป้ารม",
+    description: "ขนม เครื่องดื่ม และของกินแสนอร่อย",
+    image_url: "🏪",
+    active: true,
+  },
+  {
+    id: "shop_coop",
+    name: "สหกรณ์โรงเรียน",
+    description: "อุปกรณ์การเรียน เครื่องเขียน และนมโรงเรียน",
+    image_url: "🏫",
+    active: true,
+  },
+];
+
+const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: "p_milk",
+    name: "นมสดกล่อง",
+    price: 20,
+    emoji: "🥛",
+    active: true,
+    shop_ids: ["shop_rom", "shop_coop"],
+  },
+  {
+    id: "p_bread",
+    name: "ขนมปัง",
+    price: 10,
+    emoji: "🍞",
+    active: true,
+    shop_ids: ["shop_rom"],
+  },
+  {
+    id: "p_juice",
+    name: "น้ำส้มคั้น",
+    price: 20,
+    emoji: "🧃",
+    active: true,
+    shop_ids: ["shop_rom"],
+  },
+  {
+    id: "p_snack",
+    name: "ขนมกรุบกรอบ",
+    price: 10,
+    emoji: "🍪",
+    active: true,
+    shop_ids: ["shop_rom", "shop_coop"],
+  },
+  {
+    id: "p_pencil",
+    name: "ดินสอดำ",
+    price: 10,
+    emoji: "✏️",
+    active: true,
+    shop_ids: ["shop_coop"],
+  },
+  {
+    id: "p_notebook",
+    name: "สมุดเขียน",
+    price: 20,
+    emoji: "📓",
+    active: true,
+    shop_ids: ["shop_coop"],
+  },
+];
+
+export const getStorageData = <T>(key: string, defaultValue: T): T => {
+  if (typeof window === "undefined") return defaultValue;
+  const data = localStorage.getItem(`math_market_${key}`);
+  if (!data) {
+    localStorage.setItem(`math_market_${key}`, JSON.stringify(defaultValue));
+    return defaultValue;
+  }
+  try {
+    return JSON.parse(data);
+  } catch {
+    return defaultValue;
+  }
+};
+
+export const setStorageData = <T>(key: string, value: T): void => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`math_market_${key}`, JSON.stringify(value));
+};
+
+const LEGACY_MOCK_STUDENTS = new Set([
+  "std_1|101|น้องตะวัน",
+  "std_2|102|น้องฟ้าใส",
+  "std_3|103|น้องภูผา",
+]);
+
+const getStudents = (): Student[] => {
+  const students = getStorageData("students", INITIAL_STUDENTS);
+  const retained = students.filter(
+    (student) =>
+      !LEGACY_MOCK_STUDENTS.has(
+        `${student.id}|${student.student_code}|${student.name}`,
+      ),
+  );
+  if (retained.length !== students.length) setStorageData("students", retained);
+  return retained;
+};
+
+// Data Access API
+export const api = {
+  getStudents,
+  addStudent: (input: Pick<Student, "name" | "avatar_url">): Student => {
+    if (!input.name.trim()) {
+      throw new Error("Student name cannot be blank");
+    }
+    if (!isStudentAvatarPresetPath(input.avatar_url)) {
+      throw new Error("Student avatar must use an approved preset path");
+    }
+    const students = getStudents();
+    const uniquePart = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const student: Student = {
+      id: `std_${uniquePart}`,
+      student_code: `NEW-${Date.now()}`,
+      name: input.name.trim(),
+      classroom: "",
+      avatar_url: input.avatar_url,
+      created_at: new Date().toISOString(),
+    };
+    setStorageData("students", [...students, student]);
+    return student;
+  },
+  getCurrentStudent: (): Student | null =>
+    getStorageData("current_student", null),
+  setCurrentStudent: (student: Student | null) =>
+    setStorageData("current_student", student),
+
+  getShops: (): Shop[] => getStorageData("shops", INITIAL_SHOPS),
+  getProducts: (): Product[] => getStorageData("products", INITIAL_PRODUCTS),
+
+  getProgress: (studentId: string): StudentProgress[] => {
+    const all = getStorageData<StudentProgress[]>("progress", []);
+    const studentProg = all.filter((p) => p.student_id === studentId);
+    if (studentProg.length === 0) {
+      const initial: StudentProgress[] = [
+        {
+          student_id: studentId,
+          level: 1,
+          status: "in_progress",
+          best_score: 0,
+          first_score: 0,
+          attempt_count: 0,
+        },
+        {
+          student_id: studentId,
+          level: 2,
+          status: "locked",
+          best_score: 0,
+          first_score: 0,
+          attempt_count: 0,
+        },
+        {
+          student_id: studentId,
+          level: 3,
+          status: "locked",
+          best_score: 0,
+          first_score: 0,
+          attempt_count: 0,
+        },
+        {
+          student_id: studentId,
+          level: 4,
+          status: "locked",
+          best_score: 0,
+          first_score: 0,
+          attempt_count: 0,
+        },
+        {
+          student_id: studentId,
+          level: 5,
+          status: "locked",
+          best_score: 0,
+          first_score: 0,
+          attempt_count: 0,
+        },
+      ];
+      setStorageData("progress", [...all, ...initial]);
+      return initial;
+    }
+    return studentProg;
+  },
+
+  completeLevel: (studentId: string, level: number, score: number) => {
+    const all = getStorageData<StudentProgress[]>("progress", []);
+    const updated = all.map((p) => {
+      if (p.student_id === studentId && p.level === level) {
+        return {
+          ...p,
+          status: "completed" as const,
+          best_score: Math.max(p.best_score, score),
+          first_score: p.attempt_count === 0 ? score : p.first_score,
+          attempt_count: p.attempt_count + 1,
+          completed_at: new Date().toISOString(),
+        };
+      }
+      if (
+        p.student_id === studentId &&
+        p.level === level + 1 &&
+        p.status === "locked"
+      ) {
+        return { ...p, status: "in_progress" as const };
+      }
+      return p;
+    });
+    setStorageData("progress", updated);
+  },
+
+  recordAttempt: (attempt: Omit<Attempt, "id" | "created_at">) => {
+    const attempts = getStorageData<Attempt[]>("attempts", []);
+    const newAttempt: Attempt = {
+      ...attempt,
+      id: "att_" + Date.now(),
+      created_at: new Date().toISOString(),
+    };
+    setStorageData("attempts", [newAttempt, ...attempts]);
+  },
+
+  getAttempts: (studentId?: string): Attempt[] => {
+    const attempts = getStorageData<Attempt[]>("attempts", []);
+    return studentId
+      ? attempts.filter((a) => a.student_id === studentId)
+      : attempts;
+  },
+
+  recordAssessment: (res: Omit<AssessmentResult, "id" | "created_at">) => {
+    const all = getStorageData<AssessmentResult[]>("assessments", []);
+    const item: AssessmentResult = {
+      ...res,
+      id: "ass_" + Date.now(),
+      created_at: new Date().toISOString(),
+    };
+    setStorageData("assessments", [...all, item]);
+  },
+
+  getAssessments: (studentId?: string): AssessmentResult[] => {
+    const all = getStorageData<AssessmentResult[]>("assessments", []);
+    return studentId ? all.filter((a) => a.student_id === studentId) : all;
+  },
+};
