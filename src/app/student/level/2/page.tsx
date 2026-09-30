@@ -2,56 +2,28 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/storage";
-import { speakThai, playSoundEffect } from "@/lib/speech";
+import { playSoundEffect, speakThai } from "@/lib/speech";
 import { MoneyCard } from "@/components/common/MoneyCard";
 import { HeaderNav } from "@/components/common/HeaderNav";
 import { celebrateCompletion, celebrateCorrect } from "@/lib/celebration";
 import { getMoneySpeech, type MoneyValue } from "@/lib/money";
+import { useLessonAudio } from "@/lib/useLessonAudio";
+import { SpeechStatus } from "@/components/common/SpeechStatus";
 import { nowMs, secondsBetween, shuffleQuestions } from "@/lib/learningSession";
 import type { AttemptAnswer } from "@/types";
+import { productById } from "@/lib/catalog";
+import { ProductImage } from "@/components/common/ProductImage";
 
 const QUESTIONS = [
-  {
-    id: "l2-1",
-    item: "นมสดกล่อง",
-    price: 20,
-    emoji: "🥛",
-    options: [10, 20, 50],
-    hint: "หานม 20 บาท เท่ากับ เงิน 20 บาทนะจ๊ะ",
-  },
-  {
-    id: "l2-2",
-    item: "ขนมปัง",
-    price: 10,
-    emoji: "🍞",
-    options: [10, 20, 50],
-    hint: "ขนมปัง 10 บาท ให้หาเหรียญ 10 บาท",
-  },
-  {
-    id: "l2-3",
-    item: "น้ำผลไม้",
-    price: 20,
-    emoji: "🧃",
-    options: [10, 20, 100],
-    hint: "น้ำผลไม้ 20 บาท ใช้เงิน 20 บาทจ้า",
-  },
-  {
-    id: "l2-4",
-    item: "สมุดบันทึก",
-    price: 20,
-    emoji: "📓",
-    options: [10, 20, 50],
-    hint: "สมุด 20 บาท ตรงกับเงิน 20 บาทพอดีเลย",
-  },
-  {
-    id: "l2-5",
-    item: "ดินสอ",
-    price: 10,
-    emoji: "✏️",
-    options: [5, 10, 20],
-    hint: "ดินสอ 10 บาท ใช้เหรียญ 10 บาท",
-  },
-] as const;
+  "rom_fried_chicken", "coop_cookie", "rom_thai_tea", "coop_oreo", "coop_pocky",
+].map((id, index) => {
+  const product = productById(id);
+  return {
+    id: `l2-${index + 1}`, item: product.name, price: product.price, product,
+    options: [5, 10, 20] as MoneyValue[],
+    hint: `${product.name} ราคา ${product.price} บาท ให้เลือกเงิน ${product.price} บาท`,
+  };
+});
 
 export default function Level2Page() {
   const router = useRouter();
@@ -83,6 +55,7 @@ export default function Level2Page() {
 
   const currentQ = questions[index];
   const currentPrompt = `${currentQ.item} ราคา ${currentQ.price} บาท หนูจะเลือกเงินใบไหน?`;
+  const audio = useLessonAudio(currentPrompt, currentQ.id, isMounted && Boolean(student));
 
   useEffect(() => {
     if (!isMounted) return;
@@ -92,18 +65,18 @@ export default function Level2Page() {
   useEffect(() => {
     if (!isMounted || !student) return;
     questionStartedAt.current = nowMs();
-    speakThai(currentPrompt);
   }, [currentPrompt, isMounted, student]);
 
   const selectAnswer = (choice: MoneyValue) => {
-    if (isChecking) return;
+    if (isChecking || audio.isBusy()) return;
     playSoundEffect("click");
     setSelectedAnswer(choice);
     setFeedback(null);
+    speakThai(getMoneySpeech(choice));
   };
 
   const confirmAnswer = () => {
-    if (selectedAnswer === null || isChecking) return;
+    if (selectedAnswer === null || isChecking || audio.isBusy()) return;
 
     const choice = selectedAnswer;
     if (choice === currentQ.price) {
@@ -129,9 +102,8 @@ export default function Level2Page() {
       setFeedback(
         `ถูกต้อง! ${currentQ.item} ราคา ${currentQ.price} บาท ใช้เงิน ${choice} บาทได้`,
       );
-      speakThai("ถูกต้อง เก่งมาก");
+      void audio.say("ถูกต้อง เก่งมาก").then((result) => { if (result !== "cancelled") proceedNext(nextScore, nextAnswers); });
       setScore(nextScore);
-      setTimeout(() => proceedNext(nextScore, nextAnswers), 1600);
     } else {
       playSoundEffect("wrong");
       setFeedback(
@@ -139,11 +111,11 @@ export default function Level2Page() {
       );
       setHint(currentQ.hint);
       setQuestionWrongCount((count) => count + 1);
-      speakThai(currentQ.hint);
+      void audio.say(currentQ.hint);
     }
   };
 
-  const proceedNext = (
+  const proceedNext = async (
     finalScore: number,
     finalAnswers: AttemptAnswer[],
   ) => {
@@ -179,10 +151,10 @@ export default function Level2Page() {
       }
       if (passed) {
         celebrateCompletion();
-        speakThai("เก่งมาก! หนูจับคู่เงินกับราคาสินค้าได้ถูกต้องแล้ว");
+        await audio.say("เก่งมาก! หนูจับคู่เงินกับราคาสินค้าได้ถูกต้องแล้ว");
         router.push("/student/path");
       } else {
-        speakThai("ลองอีกครั้งนะคนเก่ง");
+        await audio.say("ลองอีกครั้งนะคนเก่ง");
         setQuestions(shuffleQuestions(QUESTIONS));
         setIndex(0);
         setScore(0);
@@ -199,13 +171,15 @@ export default function Level2Page() {
         backUrl="/student/path"
       />
 
-      <div className="w-full max-w-xl bg-white rounded-3xl p-8 shadow-xl border-4 border-emerald-400 text-center">
+      <div className="w-full max-w-6xl bg-white rounded-3xl p-5 sm:p-8 shadow-xl border-4 border-emerald-400 text-center">
         <div className="text-slate-500 font-bold mb-2">
           ข้อที่ {index + 1} จาก {questions.length}
         </div>
+        <SpeechStatus locked={audio.locked} unavailable={audio.audioUnavailable} onReplay={audio.replay} />
 
-        <div className="p-6 bg-emerald-50 rounded-3xl border-2 border-emerald-200 mb-6">
-          <div className="text-7xl mb-3">{currentQ.emoji}</div>
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:items-center lg:gap-8">
+        <div className="p-6 bg-emerald-50 rounded-3xl border-2 border-emerald-200 mb-6 lg:mb-0">
+          <div className="mb-3"><ProductImage product={currentQ.product} size={128} /></div>
           <h2 className="text-3xl font-black text-slate-800 mb-1">
             {currentQ.item}
           </h2>
@@ -214,6 +188,7 @@ export default function Level2Page() {
           </div>
         </div>
 
+        <div className="min-w-0">
         <h3 className="text-2xl font-bold text-slate-700 mb-6">
           หนูจะเลือกเงินใบไหน?
         </h3>
@@ -235,7 +210,7 @@ export default function Level2Page() {
               key={opt}
               value={opt}
               selected={selectedAnswer === opt}
-              speakOnClick
+              disabled={audio.locked || isChecking}
               onClick={() => selectAnswer(opt)}
             />
           ))}
@@ -245,10 +220,12 @@ export default function Level2Page() {
           <button
             type="button"
             onClick={confirmAnswer}
-            disabled={selectedAnswer === null || isChecking}
+            disabled={selectedAnswer === null || isChecking || audio.locked}
             className="rounded-2xl bg-emerald-600 px-8 py-4 text-xl font-black text-white shadow-lg transition-all hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-300">
             ยืนยันคำตอบ
           </button>
+        </div>
+        </div>
         </div>
       </div>
     </div>

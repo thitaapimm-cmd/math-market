@@ -8,19 +8,21 @@ import { celebrateCompletion, celebrateCorrect } from "@/lib/celebration";
 import { nowMs, secondsBetween, shuffleQuestions } from "@/lib/learningSession";
 import {
   expandMoneyQuantities,
-  formatMoneyEquation,
   sumMoneyQuantities,
   type MoneyQuantities,
 } from "@/lib/money";
-import { playSoundEffect, speakThai } from "@/lib/speech";
+import { playSoundEffect } from "@/lib/speech";
+import { useLessonAudio } from "@/lib/useLessonAudio";
+import { SpeechStatus } from "@/components/common/SpeechStatus";
 import { api } from "@/lib/storage";
 import type { AttemptAnswer, Product, Shop } from "@/types";
+import { ProductImage } from "@/components/common/ProductImage";
 
 const GUIDED_BLUEPRINTS = [
-  { id: "l5-1", shopId: "shop_rom", productIds: ["p_bread"] },
-  { id: "l5-2", shopId: "shop_coop", productIds: ["p_notebook"] },
-  { id: "l5-3", shopId: "shop_rom", productIds: ["p_juice", "p_snack"] },
-  { id: "l5-4", shopId: "shop_coop", productIds: ["p_pencil", "p_milk"] },
+  { id: "l5-1", shopId: "shop_rom", productIds: ["rom_fried_noodles"] },
+  { id: "l5-2", shopId: "shop_coop", productIds: ["coop_oreo"] },
+  { id: "l5-3", shopId: "shop_rom", productIds: ["rom_fried_chicken", "rom_thai_tea"] },
+  { id: "l5-4", shopId: "shop_coop", productIds: ["coop_pocky", "coop_cookie"] },
 ] as const;
 
 const MONEY_VALUES = [5, 10, 20, 50, 100] as const;
@@ -118,29 +120,21 @@ export default function Level5Page() {
     if (mounted && student) roundStartedAt.current = nowMs();
   }, [index, mounted, student]);
 
-  useEffect(() => {
-    if (!mounted || !student) return;
-    if (phase === "shop") {
-      speakThai(visiblePrompt);
-    } else if (phase === "items") {
-      speakThai(
-        isFreeRound
-          ? "เลือกสินค้าที่อยากซื้อใส่ตะกร้า"
-          : `เลือก${guidedProducts.map((product) => product.name).join(" และ ")} ใส่ตะกร้า`,
-      );
-    } else {
-      speakThai(`ยอด ${totalPrice} บาท เลือกเงินให้พอดี`);
-    }
-  }, [guidedProducts, isFreeRound, mounted, phase, student, totalPrice, visiblePrompt]);
+  const phasePrompt = phase === "shop" ? visiblePrompt : phase === "items"
+    ? isFreeRound ? "เลือกสินค้าที่อยากซื้อใส่ตะกร้า"
+      : `เลือก${guidedProducts.map((product) => product.name).join(" และ ")} ใส่ตะกร้า`
+    : `ยอด ${totalPrice} บาท เลือกเงินให้พอดี`;
+  const audio = useLessonAudio(phasePrompt, `${index}-${phase}`, mounted && Boolean(student));
 
   const showWrongAnswer = (hint: string) => {
     playSoundEffect("wrong");
     setWrongCount((count) => count + 1);
     setFeedback(hint);
-    speakThai(hint);
+    void audio.say(hint);
   };
 
   const chooseShop = (shopId: string) => {
+    if (isChecking || audio.isBusy()) return;
     playSoundEffect("click");
     if (selectedShopId !== shopId) setSelectedProductIds([]);
     setSelectedShopId(shopId);
@@ -148,7 +142,7 @@ export default function Level5Page() {
   };
 
   const confirmShop = () => {
-    if (!selectedShopId) return;
+    if (!selectedShopId || isChecking || audio.isBusy()) return;
     if (!isFreeRound && selectedShopId !== scenario?.shop.id) {
       showWrongAnswer(`คำใบ้: โจทย์บอกให้ไป${scenario?.shop.name}`);
       return;
@@ -159,6 +153,7 @@ export default function Level5Page() {
   };
 
   const toggleProduct = (productId: string) => {
+    if (isChecking || audio.isBusy()) return;
     playSoundEffect("click");
     setFeedback(null);
     setSelectedProductIds((selected) =>
@@ -169,7 +164,7 @@ export default function Level5Page() {
   };
 
   const confirmProducts = () => {
-    if (selectedProductIds.length === 0) return;
+    if (selectedProductIds.length === 0 || isChecking || audio.isBusy()) return;
     if (!isFreeRound) {
       const expected = guidedProducts.map((product) => product.id).sort().join("|");
       const actual = [...selectedProductIds].sort().join("|");
@@ -208,11 +203,14 @@ export default function Level5Page() {
       api.completeLevel(student.id, 5, finalScore);
     }
     celebrateCompletion();
-    speakThai("ยอดเยี่ยม หนูซื้อของครบ 5 ข้อแล้ว");
-    router.push("/student/complete");
+    void audio.say("ยอดเยี่ยม หนูซื้อของครบ 5 ข้อแล้ว").then((result) => { if (result !== "cancelled") router.push("/student/complete"); });
   };
 
   const advance = (nextScore: number, nextAnswers: AttemptAnswer[]) => {
+    if (index + 1 >= TOTAL_ROUNDS) {
+      finishLevel(nextScore, nextAnswers);
+      return;
+    }
     setSelectedShopId(null);
     setSelectedProductIds([]);
     setQuantities({});
@@ -229,7 +227,7 @@ export default function Level5Page() {
   };
 
   const pay = () => {
-    if (isChecking || moneyTotal === 0 || totalPrice === 0) return;
+    if (isChecking || audio.isBusy() || moneyTotal === 0 || totalPrice === 0) return;
     if (moneyTotal !== totalPrice) {
       showWrongAnswer(`เลือกเงินให้ครบ ${totalPrice} บาทพอดีนะ`);
       return;
@@ -272,8 +270,7 @@ export default function Level5Page() {
     playSoundEffect("correct");
     celebrateCorrect();
     setFeedback("ถูกต้อง ซื้อของสำเร็จ!");
-    speakThai("ถูกต้อง ซื้อของสำเร็จ");
-    window.setTimeout(() => advance(nextScore, nextAnswers), 1400);
+    void audio.say("ถูกต้อง ซื้อของสำเร็จ").then((result) => { if (result !== "cancelled") advance(nextScore, nextAnswers); });
   };
 
   if (!scenario && !isFreeRound) return null;
@@ -281,7 +278,8 @@ export default function Level5Page() {
   return (
     <div className="min-h-screen bg-purple-50 p-6 flex flex-col items-center">
       <HeaderNav title="Level 5: ร้านค้าชีวิตจริง" backUrl="/student/path" />
-      <main className="w-full max-w-3xl rounded-3xl border-4 border-purple-400 bg-white p-6 text-center shadow-xl">
+      <main className={`w-full max-w-6xl rounded-3xl border-4 border-purple-400 bg-white p-5 text-center shadow-xl ${phase === "pay" ? "lg:p-4" : "sm:p-6"}`}>
+        <SpeechStatus locked={audio.locked} unavailable={audio.audioUnavailable} onReplay={audio.replay} />
         <div className="font-bold text-slate-500">
           ข้อที่ {index + 1} จาก {TOTAL_ROUNDS}
         </div>
@@ -290,7 +288,7 @@ export default function Level5Page() {
             รอบเลือกซื้อเอง
           </div>
         )}
-        <h2 className="my-4 text-2xl font-black text-purple-950">
+        <h2 className={`${phase === "pay" ? "my-2" : "my-4"} text-2xl font-black text-purple-950`}>
           {visiblePrompt}
         </h2>
 
@@ -313,6 +311,7 @@ export default function Level5Page() {
                     key={shopOption.id}
                     type="button"
                     aria-label={`เลือกร้าน ${shopOption.name}`}
+                    disabled={audio.locked || isChecking}
                     aria-pressed={selected}
                     onClick={() => chooseShop(shopOption.id)}
                     className={`rounded-2xl border-4 p-6 text-xl font-black transition-all ${
@@ -332,7 +331,7 @@ export default function Level5Page() {
             </div>
             <button
               type="button"
-              disabled={!selectedShopId}
+              disabled={!selectedShopId || audio.locked || isChecking}
               onClick={confirmShop}
               className="mt-5 w-full rounded-2xl bg-purple-600 py-4 text-xl font-black text-white disabled:bg-slate-300"
             >
@@ -348,17 +347,19 @@ export default function Level5Page() {
                 <button
                   type="button"
                   onClick={() => {
+                    if (audio.isBusy()) return;
                     setSelectedShopId(null);
                     setSelectedProductIds([]);
                     setPhase("shop");
                   }}
+                  disabled={audio.locked || isChecking}
                   className="rounded-xl border-2 border-purple-300 bg-white px-3 py-2"
                 >
                   เปลี่ยนร้าน
                 </button>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
               {shopProducts.map((product) => {
                 const selected = selectedProductIds.includes(product.id);
                 return (
@@ -366,6 +367,7 @@ export default function Level5Page() {
                     key={product.id}
                     type="button"
                     aria-label={`เลือกสินค้า ${product.name} ราคา ${product.price} บาท`}
+                    disabled={audio.locked || isChecking}
                     aria-pressed={selected}
                     onClick={() => toggleProduct(product.id)}
                     className={`rounded-xl border-4 p-3 transition-all ${
@@ -374,9 +376,7 @@ export default function Level5Page() {
                         : "border-slate-200 hover:border-purple-300"
                     }`}
                   >
-                    <span aria-hidden="true" className="block text-4xl">
-                      {product.emoji}
-                    </span>
+                    <ProductImage product={product} size={80} />
                     <b>{product.name}</b>
                     <span className="block">{product.price} บาท</span>
                     {selected && <span className="block text-xs font-bold">✓ ในตะกร้า</span>}
@@ -386,7 +386,7 @@ export default function Level5Page() {
             </div>
             <button
               type="button"
-              disabled={selectedProductIds.length === 0}
+              disabled={selectedProductIds.length === 0 || audio.locked || isChecking}
               onClick={confirmProducts}
               className="mt-5 w-full rounded-2xl bg-purple-600 py-4 text-xl font-black text-white disabled:bg-slate-300"
             >
@@ -395,26 +395,24 @@ export default function Level5Page() {
           </>
         ) : (
           <>
-            <div className="mb-4 rounded-2xl bg-purple-50 p-4">
+            <div className="mb-2 rounded-2xl bg-purple-50 px-4 py-2">
               <div className="text-lg font-bold text-purple-700">
                 ยอดที่ต้องจ่าย {totalPrice} บาท
-              </div>
-              <div className="mt-2 rounded-xl bg-white p-3 text-xl font-black">
-                {formatMoneyEquation(quantities)}
               </div>
             </div>
             <MoneyQuantitySelector
               values={MONEY_VALUES}
               quantities={quantities}
+              showSelectedTray
               onChange={(next) => {
                 setQuantities(next);
                 setFeedback(null);
               }}
-              disabled={isChecking}
+              disabled={isChecking || audio.locked}
             />
             <button
               type="button"
-              disabled={moneyTotal === 0 || isChecking}
+              disabled={moneyTotal === 0 || isChecking || audio.locked}
               onClick={pay}
               className="mt-5 w-full rounded-2xl bg-purple-600 py-5 text-2xl font-black text-white disabled:bg-slate-300"
             >

@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 describe("Thai audio", () => {
   beforeEach(() => {
@@ -115,6 +117,64 @@ describe("Thai audio", () => {
 
     expect(AudioMock).toHaveBeenCalledWith(audioPath);
     expect(play).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ["ไก่ทอด ราคา 10 บาท หนูจะเลือกเงินใบไหน?", "/audio/th/l2-chicken-10.wav"],
+    ["ผัดมาม่า ราคา 15 บาท เลือกเงินให้พอดี", "/audio/th/l3-noodles-15.wav"],
+    ["ไก่ทอด 10 บาท กับ คุกกี้ 5 บาท รวมทั้งหมดกี่บาท?", "/audio/th/l4-chicken-cookie.wav"],
+    ["ไปร้านค้าป้ารม แล้วเลือกผัดมาม่า ราคา 15 บาท", "/audio/th/l5-rom-noodles.wav"],
+  ])("uses a recorded question for new product text %s", async (spoken, path) => {
+    const play = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("Audio", vi.fn(function AudioMock() {
+      return { play, pause: vi.fn(), onended: null, onerror: null };
+    }));
+    const { speakThai } = await import("./speech");
+    speakThai(spoken);
+    expect(Audio).toHaveBeenCalledWith(path);
+  });
+
+  it.each([
+    ["ป๊อกกี้ 20 บาท กับ คุกกี้ 5 บาท รวมเป็นกี่บาท?", "/audio/th/pretest-pocky-cookie-25.wav"],
+    ["ป๊อกกี้ 20 บาท บวกคุกกี้ 5 บาท รวมเป็น 25 บาท", "/audio/th/pretest-hint-pocky-cookie-25.wav"],
+    ["โอรีโอ้ ราคา 5 บาท หนูจะเลือกเงินใบไหน?", "/audio/th/l2-oreo-5-updated.wav"],
+    ["ป๊อกกี้ ราคา 20 บาท หนูจะเลือกเงินใบไหน?", "/audio/th/l2-pocky-20.wav"],
+    ["โอรีโอ้ ราคา 5 บาท ให้เลือกเงิน 5 บาท", "/audio/th/l2-hint-oreo-5.wav"],
+    ["ป๊อกกี้ ราคา 20 บาท ให้เลือกเงิน 20 บาท", "/audio/th/l2-hint-pocky-20.wav"],
+    ["ชาไทย 10 บาท กับ ป๊อกกี้ 20 บาท รวมทั้งหมดกี่บาท?", "/audio/th/l4-tea-pocky-30.wav"],
+    ["ผัดมาม่า 15 บาท กับ โอรีโอ้ 5 บาท รวมทั้งหมดกี่บาท?", "/audio/th/l4-noodles-oreo-updated.wav"],
+    ["ชาไทย 10 บาท บวก ป๊อกกี้ 20 บาท รวมเป็น 30 บาท", "/audio/th/l4-hint-tea-pocky-30.wav"],
+    ["ผัดมาม่า 15 บาท บวก โอรีโอ้ 5 บาท รวมเป็น 20 บาท", "/audio/th/l4-hint-noodles-oreo-20.wav"],
+    ["ไปสหกรณ์โรงเรียน แล้วเลือกโอรีโอ้ ราคา 5 บาท", "/audio/th/l5-coop-oreo-updated.wav"],
+    ["ไปสหกรณ์โรงเรียน แล้วเลือกป๊อกกี้ และ คุกกี้ ราคา 25 บาท", "/audio/th/l5-coop-pocky-cookie-25.wav"],
+    ["เลือกโอรีโอ้ ใส่ตะกร้า", "/audio/th/l5-items-oreo-updated.wav"],
+    ["เลือกป๊อกกี้ และ คุกกี้ ใส่ตะกร้า", "/audio/th/l5-items-pocky-cookie-updated.wav"],
+    ["คำใบ้: เลือกโอรีโอ้ให้ครบ", "/audio/th/l5-hint-items-oreo.wav"],
+    ["คำใบ้: เลือกป๊อกกี้ และ คุกกี้ให้ครบ", "/audio/th/l5-hint-items-pocky-cookie.wav"],
+    ["ยอด 25 บาท เลือกเงินให้พอดี", "/audio/th/l5-pay-25.wav"],
+  ])("uses the updated recording for %s", async (spoken, path) => {
+    vi.stubGlobal("Audio", vi.fn(function AudioMock() {
+      return { play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(), onended: null, onerror: null };
+    }));
+    const { speakThai } = await import("./speech");
+    speakThai(spoken);
+    expect(Audio).toHaveBeenCalledWith(path);
+    expect(existsSync(join(process.cwd(), "public", path))).toBe(true);
+  });
+
+  it.each([
+    ["เก่งมาก พร้อมเริ่มเรียนแล้ว!", "/audio/th/pretest-complete.wav"],
+    ["เยี่ยมมาก! หนูรู้จักเงินแล้ว ปลดล็อกด่านที่ 2 แล้วจ้า", "/audio/th/l1-complete.wav"],
+    ["เก่งมาก! หนูจับคู่เงินกับราคาสินค้าได้ถูกต้องแล้ว", "/audio/th/l2-complete.wav"],
+    ["ยอดเยี่ยมมาก! หนูรวมเงินซื้อของ 1 ชิ้นสำเร็จแล้ว", "/audio/th/l3-complete.wav"],
+    ["เก่งมาก ผ่านด่านที่ 4 แล้ว", "/audio/th/l4-complete.wav"],
+  ])("uses recorded completion speech for %s", async (spoken, path) => {
+    vi.stubGlobal("Audio", vi.fn(function AudioMock() {
+      return { play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(), onended: null, onerror: null };
+    }));
+    const { speakThai } = await import("./speech");
+    speakThai(spoken);
+    expect(Audio).toHaveBeenCalledWith(path);
   });
 
   it.each([
@@ -257,7 +317,7 @@ describe("Thai audio", () => {
 
     const { speakThaiAndWait } = await import("./speech");
     let resolved = false;
-    const speech = speakThaiAndWait("ถูกต้อง เก่งมาก", 3000).then(() => { resolved = true; });
+    const speech = speakThaiAndWait("ถูกต้อง เก่งมาก").then(() => { resolved = true; });
     await Promise.resolve();
     expect(resolved).toBe(false);
 
@@ -283,12 +343,12 @@ describe("Thai audio", () => {
     );
 
     const { speakThaiAndWait } = await import("./speech");
-    const speech = speakThaiAndWait("ถูกต้อง เก่งมาก", 3000);
+    const speech = speakThaiAndWait("ถูกต้อง เก่งมาก");
     (audioInstance as unknown as { onerror: (() => void) | null }).onerror?.();
     await expect(speech).resolves.toBeUndefined();
   });
 
-  it("uses a timeout so awaited speech cannot block the lesson", async () => {
+  it("unlocks if a recording never progresses", async () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "Audio",
@@ -305,9 +365,92 @@ describe("Thai audio", () => {
       }),
     );
 
-    const { speakThaiAndWait } = await import("./speech");
-    const speech = speakThaiAndWait("ถูกต้อง เก่งมาก", 250);
-    await vi.advanceTimersByTimeAsync(250);
-    await expect(speech).resolves.toBeUndefined();
+    const { playSpeech } = await import("./speech");
+    const speech = playSpeech("ถูกต้อง เก่งมาก");
+    await vi.advanceTimersByTimeAsync(8000);
+    await expect(speech).resolves.toBe("unavailable");
+  });
+
+  it("unlocks if browser speech remains pending indefinitely", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("SpeechSynthesisUtterance", class {
+      lang = "";
+      rate = 1;
+      pitch = 1;
+      constructor(public text: string) {}
+    });
+    vi.stubGlobal("speechSynthesis", {
+      cancel: vi.fn(), resume: vi.fn(), getVoices: () => [], speak: vi.fn(),
+      pending: true, speaking: false,
+    });
+    const { playSpeech } = await import("./speech");
+    const speech = playSpeech("ข้อความไม่มีไฟล์เสียง");
+    await vi.advanceTimersByTimeAsync(5000);
+    await expect(speech).resolves.toBe("unavailable");
+  });
+
+  it("waits for browser speech to finish for a new product question", async () => {
+    let utterance: { onend?: () => void; onerror?: () => void } | undefined;
+    vi.stubGlobal("SpeechSynthesisUtterance", class {
+      onend?: () => void;
+      onerror?: () => void;
+      lang = "";
+      rate = 1;
+      pitch = 1;
+      constructor(public text: string) {
+        utterance = { onend: () => this.onend?.(), onerror: () => this.onerror?.() };
+      }
+    });
+    vi.stubGlobal("speechSynthesis", {
+      cancel: vi.fn(), resume: vi.fn(), getVoices: () => [], speak: vi.fn(),
+    });
+
+    const { playSpeech } = await import("./speech");
+    let result = "pending";
+    const playback = playSpeech("ผัดมาม่า ราคา 15 บาท").then((value) => { result = value; });
+    await Promise.resolve();
+    expect(result).toBe("pending");
+    utterance?.onend?.();
+    await playback;
+    expect(result).toBe("ended");
+  });
+
+  it("does not cut a long recording off after five seconds", async () => {
+    vi.useFakeTimers();
+    let end: (() => void) | null = null;
+    vi.stubGlobal("Audio", vi.fn(function AudioMock() {
+      return {
+        play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(),
+        get onended() { return end; },
+        set onended(callback: (() => void) | null) { end = callback; },
+        onerror: null,
+      };
+    }));
+    const { playSpeech } = await import("./speech");
+    let result = "pending";
+    const playback = playSpeech("ถูกต้อง เก่งมาก").then((value) => { result = value; });
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(result).toBe("pending");
+    (end as (() => void) | null)?.();
+    await playback;
+    expect(result).toBe("ended");
+  });
+
+  it("cancels a previous question when another starts", async () => {
+    vi.stubGlobal("SpeechSynthesisUtterance", class {
+      onend?: () => void;
+      onerror?: () => void;
+      lang = "";
+      rate = 1;
+      pitch = 1;
+      constructor(public text: string) {}
+    });
+    vi.stubGlobal("speechSynthesis", {
+      cancel: vi.fn(), resume: vi.fn(), getVoices: () => [], speak: vi.fn(),
+    });
+    const { playSpeech } = await import("./speech");
+    const first = playSpeech("ข้อแรก");
+    void playSpeech("ข้อถัดไป");
+    await expect(first).resolves.toBe("cancelled");
   });
 });

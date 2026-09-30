@@ -25,7 +25,7 @@ Simplify the Math Market landing page so children enter through a single central
 
 - Collect exactly one required name and one required preset avatar.
 - Do not request an uploaded image.
-- Show a small, friendly set of preset avatar choices.
+- Use the user-provided portrait sheet as the source for ten preset child avatars. Crop the sheet into individual project-local image assets without redrawing or altering the supplied portraits.
 - Disable submission until both values are present.
 - On submission, create a locally unique student record, persist it in browser storage, refresh the student list, select the new student, close the modal, and leave the user on `/student/select` so the result is visible.
 - The modal can be dismissed without saving.
@@ -34,7 +34,7 @@ Simplify the Math Market landing page so children enter through a single central
 ## Data Changes
 
 - Add a storage API method for appending a student without overwriting existing students.
-- Continue using the existing `Student` model. Generate `id`, `student_code`, and `created_at` locally; store the chosen preset avatar in `avatar_url`.
+- Continue using the existing `Student` model. Generate `id`, `student_code`, and `created_at` locally; store the chosen preset image path in `avatar_url`.
 - No server, authentication, classroom entry, image upload, or deletion flow is included.
 
 ## Typography

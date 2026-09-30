@@ -28,6 +28,20 @@ vi.mock("@/lib/speech", () => ({
   playSoundEffect: mockPlaySoundEffect,
 }));
 
+const { promptMarker } = vi.hoisted(() => ({ promptMarker: { current: "" } }));
+vi.mock("@/lib/useLessonAudio", () => ({
+  useLessonAudio: (prompt: string, key: string, enabled: boolean) => {
+    if (enabled && promptMarker.current !== key) {
+      promptMarker.current = key;
+      mockSpeakThai(prompt);
+    }
+    return {
+      locked: false, audioUnavailable: false, isBusy: () => false,
+      replay: () => mockSpeakThai(prompt),
+      say: (text: string) => { mockSpeakThai(text); return Promise.resolve("ended"); },
+    };
+  },
+}));
 vi.mock("@/lib/celebration", () => ({
   celebrateCorrect: vi.fn(),
   celebrateCompletion: vi.fn(),
@@ -41,14 +55,14 @@ describe("Level 3 flexible payment", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    promptMarker.current = "";
     vi.spyOn(Math, "random").mockReturnValue(0.999);
     mockGetCurrentStudent.mockReturnValue({ id: "student-1", name: "ทดสอบ" });
   });
 
   it.each([
-    { clicks: [10, 10, 10], equation: "10 × 3 = 30 บาท" },
-    { clicks: [20, 10], equation: "10 + 20 = 30 บาท" },
-    { clicks: [10, 10, 5, 5], equation: "5 × 2 + 10 × 2 = 30 บาท" },
+    { clicks: [5, 5, 5], equation: "5 + 5 + 5 = 15 บาท" },
+    { clicks: [10, 5], equation: "5 + 10 = 15 บาท" },
   ])("accepts the exact-payment combination $equation", async ({ clicks, equation }) => {
     const user = userEvent.setup();
     render(<Level3Page />);
@@ -69,7 +83,7 @@ describe("Level 3 flexible payment", () => {
 
     await waitFor(() =>
       expect(mockSpeakThai).toHaveBeenCalledWith(
-        "ขนมกล่องโต ราคา 30 บาท เลือกเงินให้พอดี",
+        "ผัดมาม่า ราคา 15 บาท เลือกเงินให้พอดี",
       ),
     );
     await user.click(
@@ -77,7 +91,7 @@ describe("Level 3 flexible payment", () => {
     );
     await user.click(screen.getByRole("button", { name: "จ่ายเงิน" }));
 
-    const hint = "เลือกเงินให้ครบ 30 บาทพอดีนะ";
+    const hint = "เลือกเงินให้ครบ 15 บาทพอดีนะ";
     expect(screen.getByRole("status")).toHaveTextContent(hint);
     expect(mockSpeakThai).toHaveBeenLastCalledWith(hint);
   });

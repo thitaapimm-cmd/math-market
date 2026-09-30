@@ -11,6 +11,7 @@ interface MoneyCardProps {
   onClick?: () => void;
   size?: "md" | "lg";
   speakOnClick?: boolean;
+  disabled?: boolean;
 }
 
 export const MoneyCard: React.FC<MoneyCardProps> = ({
@@ -20,6 +21,7 @@ export const MoneyCard: React.FC<MoneyCardProps> = ({
   onClick,
   size = "lg",
   speakOnClick = false,
+  disabled = false,
 }) => {
   const isCoin = value <= 10;
 
@@ -36,7 +38,9 @@ export const MoneyCard: React.FC<MoneyCardProps> = ({
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={() => {
+        if (disabled) return;
         onClick?.();
         if (speakOnClick) speakThai(getMoneySpeech(value));
       }}

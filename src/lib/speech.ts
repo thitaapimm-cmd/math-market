@@ -121,102 +121,194 @@ const THAI_RECORDINGS: Readonly<Record<string, string>> = {
     "/audio/th/hint-l5-items-pencil-milk.m4a",
   "ถูกต้อง ซื้อของสำเร็จ": "/audio/th/l5-purchase-correct.m4a",
   "ยอดเยี่ยม หนูซื้อของครบ 5 ข้อแล้ว": "/audio/th/l5-complete.m4a",
+  'ถ้าจะซื้อไก่ทอด 10 บาท ควรเลือกเงินใด?': "/audio/th/pretest-chicken-10.wav",
+  'ผัดมาม่า ราคา 15 บาท ต้องใช้เงินรวมกันกี่บาท?': "/audio/th/pretest-noodles-15.wav",
+  'ป๊อกกี้ 20 บาท กับ คุกกี้ 5 บาท รวมเป็นกี่บาท?': "/audio/th/pretest-pocky-cookie-25.wav",
+  'ป๊อกกี้ 20 บาท บวกคุกกี้ 5 บาท รวมเป็น 25 บาท': "/audio/th/pretest-hint-pocky-cookie-25.wav",
+  'ไก่ทอด ราคา 10 บาท หนูจะเลือกเงินใบไหน?': "/audio/th/l2-chicken-10.wav",
+  'คุกกี้ ราคา 5 บาท หนูจะเลือกเงินใบไหน?': "/audio/th/l2-cookie-5.wav",
+  'ชาไทย ราคา 10 บาท หนูจะเลือกเงินใบไหน?': "/audio/th/l2-thai-tea-10.wav",
+  'โอรีโอ้ ราคา 5 บาท หนูจะเลือกเงินใบไหน?': "/audio/th/l2-oreo-5-updated.wav",
+  'ป๊อกกี้ ราคา 20 บาท หนูจะเลือกเงินใบไหน?': "/audio/th/l2-pocky-20.wav",
+  'โอรีโอ้ ราคา 5 บาท ให้เลือกเงิน 5 บาท': "/audio/th/l2-hint-oreo-5.wav",
+  'ป๊อกกี้ ราคา 20 บาท ให้เลือกเงิน 20 บาท': "/audio/th/l2-hint-pocky-20.wav",
+  'ผัดมาม่า ราคา 15 บาท เลือกเงินให้พอดี': "/audio/th/l3-noodles-15.wav",
+  'เบนโตะ ราคา 5 บาท เลือกเงินให้พอดี': "/audio/th/l3-bento-5.wav",
+  'เฟรนฟราย ราคา 10 บาท เลือกเงินให้พอดี': "/audio/th/l3-fries-10.wav",
+  'เยลลี่ ราคา 10 บาท เลือกเงินให้พอดี': "/audio/th/l3-jelly-10.wav",
+  'ไอติมโคล่า ราคา 5 บาท เลือกเงินให้พอดี': "/audio/th/l3-cola-5.wav",
+  'ไก่ทอด 10 บาท กับ คุกกี้ 5 บาท รวมทั้งหมดกี่บาท?': "/audio/th/l4-chicken-cookie.wav",
+  'ชาไทย 10 บาท กับ ป๊อกกี้ 20 บาท รวมทั้งหมดกี่บาท?': "/audio/th/l4-tea-pocky-30.wav",
+  'ผัดมาม่า 15 บาท กับ โอรีโอ้ 5 บาท รวมทั้งหมดกี่บาท?': "/audio/th/l4-noodles-oreo-updated.wav",
+  'ชาไทย 10 บาท บวก ป๊อกกี้ 20 บาท รวมเป็น 30 บาท': "/audio/th/l4-hint-tea-pocky-30.wav",
+  'ผัดมาม่า 15 บาท บวก โอรีโอ้ 5 บาท รวมเป็น 20 บาท': "/audio/th/l4-hint-noodles-oreo-20.wav",
+  'เบนโตะ 5 บาท กับ ไอติมโคล่า 5 บาท รวมทั้งหมดกี่บาท?': "/audio/th/l4-bento-cola.wav",
+  'ชีสบอล 10 บาท กับ ไอติมเรนโบว์ 10 บาท รวมทั้งหมดกี่บาท?': "/audio/th/l4-cheese-rainbow.wav",
+  'เลือกเงินให้ครบ 10 บาท': "/audio/th/l4-pay-10.wav",
+  'เลือกเงินให้ครบ 20 บาท': "/audio/th/l4-pay-20.wav",
+  'ไปร้านค้าป้ารม แล้วเลือกผัดมาม่า ราคา 15 บาท': "/audio/th/l5-rom-noodles.wav",
+  'ไปสหกรณ์โรงเรียน แล้วเลือกโอรีโอ้ ราคา 5 บาท': "/audio/th/l5-coop-oreo-updated.wav",
+  'ไปร้านค้าป้ารม แล้วเลือกไก่ทอด และ ชาไทย ราคา 20 บาท': "/audio/th/l5-rom-chicken-tea.wav",
+  'ไปสหกรณ์โรงเรียน แล้วเลือกป๊อกกี้ และ คุกกี้ ราคา 25 บาท': "/audio/th/l5-coop-pocky-cookie-25.wav",
+  'เลือกผัดมาม่า ใส่ตะกร้า': "/audio/th/l5-items-noodles.wav",
+  'เลือกโอรีโอ้ ใส่ตะกร้า': "/audio/th/l5-items-oreo-updated.wav",
+  'เลือกไก่ทอด และ ชาไทย ใส่ตะกร้า': "/audio/th/l5-items-chicken-tea.wav",
+  'เลือกป๊อกกี้ และ คุกกี้ ใส่ตะกร้า': "/audio/th/l5-items-pocky-cookie-updated.wav",
+  'คำใบ้: เลือกโอรีโอ้ให้ครบ': "/audio/th/l5-hint-items-oreo.wav",
+  'คำใบ้: เลือกป๊อกกี้ และ คุกกี้ให้ครบ': "/audio/th/l5-hint-items-pocky-cookie.wav",
+  'ยอด 5 บาท เลือกเงินให้พอดี': "/audio/th/l5-pay-5.wav",
+  'ยอด 15 บาท เลือกเงินให้พอดี': "/audio/th/l5-pay-15.wav",
+  'ยอด 25 บาท เลือกเงินให้พอดี': "/audio/th/l5-pay-25.wav",
+  "สังเกตตัวเลข 5 บนเหรียญนะจ๊ะ": "/audio/th/l1-hint-5.wav",
+  "เก่งมาก พร้อมเริ่มเรียนแล้ว!": "/audio/th/pretest-complete.wav",
+  "เยี่ยมมาก! หนูรู้จักเงินแล้ว ปลดล็อกด่านที่ 2 แล้วจ้า": "/audio/th/l1-complete.wav",
+  "เก่งมาก! หนูจับคู่เงินกับราคาสินค้าได้ถูกต้องแล้ว": "/audio/th/l2-complete.wav",
+  "ยอดเยี่ยมมาก! หนูรวมเงินซื้อของ 1 ชิ้นสำเร็จแล้ว": "/audio/th/l3-complete.wav",
+  "เก่งมาก ผ่านด่านที่ 4 แล้ว": "/audio/th/l4-complete.wav",
 };
 
+type SpeechResult = "ended" | "unavailable" | "cancelled";
 let currentVoiceAudio: HTMLAudioElement | null = null;
+let cancelCurrentSpeech: (() => void) | null = null;
 let sharedAudioContext: AudioContext | null = null;
 
-const speakWithBrowserVoice = (text: string) => {
-  currentVoiceAudio?.pause();
-  currentVoiceAudio = null;
+export const stopSpeech = () => {
+  cancelCurrentSpeech?.();
+  cancelCurrentSpeech = null;
+};
 
-  if (
-    typeof window === "undefined" ||
-    !("speechSynthesis" in window) ||
-    typeof SpeechSynthesisUtterance === "undefined"
-  ) {
-    return;
-  }
+export const playSpeech = (text: string): Promise<SpeechResult> => {
+  if (typeof window === "undefined") return Promise.resolve("unavailable");
+  stopSpeech();
 
-  const synth = window.speechSynthesis;
-  const utterance = new SpeechSynthesisUtterance(text);
-  const voices = synth.getVoices?.() ?? [];
-  const thaiVoice =
-    voices.find((voice) => voice.lang.toLowerCase() === "th-th") ??
-    voices.find((voice) => voice.lang.toLowerCase().startsWith("th"));
+  return new Promise((resolve) => {
+    let finished = false;
+    let audio: HTMLAudioElement | null = null;
+    let watchdog: number | undefined;
+    let monitor: number | undefined;
+    const synth = window.speechSynthesis;
+    const finish = (result: SpeechResult) => {
+      if (finished) return;
+      finished = true;
+      if (watchdog !== undefined) window.clearTimeout(watchdog);
+      if (monitor !== undefined) window.clearInterval(monitor);
+      if (audio) {
+        audio.onended = null;
+        audio.onerror = null;
+      }
+      if (currentVoiceAudio === audio) currentVoiceAudio = null;
+      if (cancelCurrentSpeech === cancel) cancelCurrentSpeech = null;
+      resolve(result);
+    };
+    const cancel = () => {
+      audio?.pause();
+      synth?.cancel();
+      finish("cancelled");
+    };
+    cancelCurrentSpeech = cancel;
 
-  utterance.lang = "th-TH";
-  utterance.rate = 0.88;
-  utterance.pitch = 1.05;
-  if (thaiVoice) utterance.voice = thaiVoice;
+    const playBrowserVoice = () => {
+      if (audio) {
+        audio.onended = null;
+        audio.onerror = null;
+        audio.pause();
+        if (currentVoiceAudio === audio) currentVoiceAudio = null;
+        audio = null;
+      }
+      if (watchdog !== undefined) window.clearTimeout(watchdog);
+      if (monitor !== undefined) window.clearInterval(monitor);
+      if (!synth || typeof SpeechSynthesisUtterance === "undefined") {
+        finish("unavailable");
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voices = synth.getVoices?.() ?? [];
+      const thaiVoice = voices.find((voice) => voice.lang.toLowerCase() === "th-th") ??
+        voices.find((voice) => voice.lang.toLowerCase().startsWith("th"));
+      utterance.lang = "th-TH";
+      utterance.rate = 0.88;
+      utterance.pitch = 1.05;
+      if (thaiVoice) utterance.voice = thaiVoice;
+      const issuedAt = Date.now();
+      let startedAt: number | null = null;
+      let silentChecks = 0;
+      utterance.onstart = () => { startedAt = Date.now(); };
+      utterance.onend = () => finish("ended");
+      utterance.onerror = () => finish("unavailable");
+      try {
+        synth.cancel();
+        synth.resume?.();
+        synth.speak(utterance);
+        monitor = window.setInterval(() => {
+          if (synth.speaking) {
+            startedAt ??= Date.now();
+            silentChecks = 0;
+            return;
+          }
+          if (startedAt !== null) {
+            silentChecks += 1;
+            const minimumDuration = Math.min(12000, Math.max(1500, text.length * 95));
+            if (silentChecks >= 4 && !synth.pending && Date.now() - startedAt >= minimumDuration) finish("ended");
+          } else if (!synth.pending && Date.now() - issuedAt >= 3000) {
+            finish("unavailable");
+          }
+        }, 250);
+        // Some browsers leave pending/speaking true after audible speech stops.
+        const maxDuration = Math.min(15000, Math.max(5000, text.length * 150));
+        watchdog = window.setTimeout(() => { synth.cancel(); finish("unavailable"); }, maxDuration);
+      } catch {
+        finish("unavailable");
+      }
+    };
 
-  synth.cancel();
-  synth.resume?.();
-  synth.speak(utterance);
+    const recording = THAI_RECORDINGS[text];
+    if (!recording || typeof Audio === "undefined") {
+      playBrowserVoice();
+      return;
+    }
+    audio = new Audio(recording);
+    currentVoiceAudio = audio;
+    audio.onended = () => finish("ended");
+    audio.onerror = () => { if (!finished) playBrowserVoice(); };
+    let lastProgressAt = Date.now();
+    let lastPlaybackTime = 0;
+    monitor = window.setInterval(() => {
+      if (audio?.ended) finish("ended");
+      if (!audio || finished) return;
+      if (typeof audio.currentTime === "number" && audio.currentTime > lastPlaybackTime + 0.01) {
+        lastPlaybackTime = audio.currentTime;
+        lastProgressAt = Date.now();
+      }
+      if (Date.now() - lastProgressAt >= 8000) finish("unavailable");
+    }, 250);
+    try {
+      void audio.play().catch((error: unknown) => {
+        if (finished) return;
+        if (error instanceof DOMException && error.name === "NotAllowedError") {
+          finish("unavailable");
+        } else {
+          playBrowserVoice();
+        }
+      });
+    } catch {
+      playBrowserVoice();
+    }
+    // The progress monitor releases a blocked recording; this is a final guard
+    // if intervals are throttled while the page is in the background.
+    if (audio && !finished) {
+      watchdog = window.setTimeout(() => {
+        if (!finished) playBrowserVoice();
+      }, 30000);
+    }
+  });
 };
 
 export const speakThai = (text: string) => {
-  if (typeof window === "undefined") return;
-
-  const recording = THAI_RECORDINGS[text];
-  if (recording && typeof Audio !== "undefined") {
-    window.speechSynthesis?.cancel();
-    currentVoiceAudio?.pause();
-
-    const audio = new Audio(recording);
-    currentVoiceAudio = audio;
-    void audio.play().catch(() => {
-      if (currentVoiceAudio === audio) speakWithBrowserVoice(text);
-    });
-    return;
-  }
-
-  speakWithBrowserVoice(text);
+  void playSpeech(text);
 };
 
-export const speakThaiAndWait = (
-  text: string,
-  fallbackMs = 5000,
-): Promise<void> => {
-  if (typeof window === "undefined") return Promise.resolve();
-
-  const recording = THAI_RECORDINGS[text];
-  if (!recording || typeof Audio === "undefined") {
-    speakWithBrowserVoice(text);
-    return Promise.resolve();
-  }
-
-  window.speechSynthesis?.cancel();
-  currentVoiceAudio?.pause();
-
-  const audio = new Audio(recording);
-  currentVoiceAudio = audio;
-
-  return new Promise((resolve) => {
-    let settled = false;
-    const timeout = window.setTimeout(() => settle(), fallbackMs);
-    const settle = () => {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timeout);
-      audio.onended = null;
-      audio.onerror = null;
-      if (currentVoiceAudio === audio) currentVoiceAudio = null;
-      resolve();
-    };
-
-    audio.onended = settle;
-    audio.onerror = () => {
-      if (currentVoiceAudio === audio) currentVoiceAudio = null;
-      speakWithBrowserVoice(text);
-      settle();
-    };
-    void audio.play().catch(() => {
-      if (currentVoiceAudio === audio) currentVoiceAudio = null;
-      speakWithBrowserVoice(text);
-      settle();
-    });
-  });
+export const speakThaiAndWait = async (text: string): Promise<void> => {
+  await playSpeech(text);
 };
 
 type FeedbackSound = "correct" | "wrong" | "click" | "celebrate";

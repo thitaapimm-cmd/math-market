@@ -2,11 +2,13 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/storage";
-import { speakThai, playSoundEffect } from "@/lib/speech";
+import { playSoundEffect, speakThai } from "@/lib/speech";
 import { MoneyCard } from "@/components/common/MoneyCard";
 import { HeaderNav } from "@/components/common/HeaderNav";
 import { celebrateCompletion, celebrateCorrect } from "@/lib/celebration";
 import { getMoneySpeech, type MoneyValue } from "@/lib/money";
+import { useLessonAudio } from "@/lib/useLessonAudio";
+import { SpeechStatus } from "@/components/common/SpeechStatus";
 import { nowMs, secondsBetween, shuffleQuestions } from "@/lib/learningSession";
 import type { AttemptAnswer } from "@/types";
 
@@ -41,10 +43,10 @@ const QUESTIONS = [
   },
   {
     id: "5",
-    money: 20,
-    options: [10, 20, 50],
-    correct: 20,
-    hint: "สีเขียวใบนี้คือเงิน 20 บาท",
+    money: 5,
+    options: [1, 5, 10],
+    correct: 5,
+    hint: "สังเกตตัวเลข 5 บนเหรียญนะจ๊ะ",
   },
 ] as const;
 
@@ -77,6 +79,7 @@ export default function Level1Page() {
   }, []);
 
   const currentQ = questions[index];
+  const audio = useLessonAudio("เงินนี้มีค่าเท่าไร?", currentQ.id, isMounted && Boolean(student));
 
   useEffect(() => {
     if (!isMounted) return;
@@ -86,11 +89,10 @@ export default function Level1Page() {
   useEffect(() => {
     if (!isMounted || !student) return;
     questionStartedAt.current = nowMs();
-    speakThai("เงินนี้มีค่าเท่าไร?");
   }, [currentQ, isMounted, student]);
 
   const selectAnswer = (choice: MoneyValue) => {
-    if (isChecking) return;
+    if (isChecking || audio.isBusy()) return;
     playSoundEffect("click");
     speakThai(getMoneySpeech(choice));
     setSelectedAnswer(choice);
@@ -98,7 +100,7 @@ export default function Level1Page() {
   };
 
   const confirmAnswer = () => {
-    if (selectedAnswer === null || isChecking) return;
+    if (selectedAnswer === null || isChecking || audio.isBusy()) return;
 
     const choice = selectedAnswer;
     if (choice === currentQ.correct) {
@@ -122,19 +124,18 @@ export default function Level1Page() {
       playSoundEffect("correct");
       celebrateCorrect();
       setFeedback(`ถูกต้อง! นี่คือ ${currentQ.correct} บาท`);
-      speakThai("ถูกต้อง เก่งมาก");
+      void audio.say("ถูกต้อง เก่งมาก").then((result) => { if (result !== "cancelled") proceedNext(nextScore, nextAnswers); });
       setScore(nextScore);
-      setTimeout(() => proceedNext(nextScore, nextAnswers), 1600);
     } else {
       playSoundEffect("wrong");
       setFeedback(`ยังไม่ถูกนะ หนูเลือก ${getMoneySpeech(choice)}`);
       setHint(currentQ.hint);
       setQuestionWrongCount((count) => count + 1);
-      speakThai(currentQ.hint);
+      void audio.say(currentQ.hint);
     }
   };
 
-  const proceedNext = (
+  const proceedNext = async (
     finalScore: number,
     finalAnswers: AttemptAnswer[],
   ) => {
@@ -174,10 +175,10 @@ export default function Level1Page() {
 
       if (passed) {
         celebrateCompletion();
-        speakThai("เยี่ยมมาก! หนูรู้จักเงินแล้ว ปลดล็อกด่านที่ 2 แล้วจ้า");
+        await audio.say("เยี่ยมมาก! หนูรู้จักเงินแล้ว ปลดล็อกด่านที่ 2 แล้วจ้า");
         router.push("/student/path");
       } else {
-        speakThai("ไม่เป็นไรนะ ลองใหม่อีกครั้งเพื่อสะสมดาวกันเถอะ");
+        await audio.say("ไม่เป็นไรนะ ลองใหม่อีกครั้งเพื่อสะสมดาวกันเถอะ");
         setQuestions(shuffleQuestions(QUESTIONS));
         setIndex(0);
         setScore(0);
@@ -200,12 +201,13 @@ export default function Level1Page() {
         </div>
 
         <div className="flex justify-center mb-8">
-          <MoneyCard value={currentQ.money} size="lg" speakOnClick />
+          <MoneyCard value={currentQ.money} size="lg" disabled={audio.locked || isChecking} onClick={() => { void audio.say(getMoneySpeech(currentQ.money)); }} />
         </div>
 
         <h2 className="text-3xl font-black text-slate-800 mb-6">
           เงินนี้มีค่าเท่าไร?
         </h2>
+        <SpeechStatus locked={audio.locked} unavailable={audio.audioUnavailable} onReplay={audio.replay} />
 
         {hint && (
           <div className="p-3 bg-amber-100 border-2 border-amber-400 text-amber-900 rounded-2xl mb-4 font-bold text-lg animate-bounce">
@@ -225,7 +227,7 @@ export default function Level1Page() {
               key={opt}
               type="button"
               aria-pressed={selectedAnswer === opt}
-              disabled={isChecking}
+              disabled={isChecking || audio.locked}
               onClick={() => selectAnswer(opt)}
               className={`py-5 border-4 text-sky-950 rounded-3xl text-3xl font-black active:scale-95 transition-all shadow-md ${
                 selectedAnswer === opt
@@ -241,7 +243,7 @@ export default function Level1Page() {
           <button
             type="button"
             onClick={confirmAnswer}
-            disabled={selectedAnswer === null || isChecking}
+            disabled={selectedAnswer === null || isChecking || audio.locked}
             className="rounded-2xl bg-sky-600 px-8 py-4 text-xl font-black text-white shadow-lg transition-all hover:bg-sky-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-300">
             ยืนยันคำตอบ
           </button>

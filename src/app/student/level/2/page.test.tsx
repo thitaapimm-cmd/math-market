@@ -23,6 +23,20 @@ vi.mock("@/lib/speech", () => ({
   speakThai: mockSpeakThai,
   playSoundEffect: mockPlaySoundEffect,
 }));
+const { promptMarker } = vi.hoisted(() => ({ promptMarker: { current: "" } }));
+vi.mock("@/lib/useLessonAudio", () => ({
+  useLessonAudio: (prompt: string, key: string, enabled: boolean) => {
+    if (enabled && promptMarker.current !== key) {
+      promptMarker.current = key;
+      mockSpeakThai(prompt);
+    }
+    return {
+      locked: false, audioUnavailable: false, isBusy: () => false,
+      replay: () => mockSpeakThai(prompt),
+      say: (text: string) => { mockSpeakThai(text); return Promise.resolve("ended"); },
+    };
+  },
+}));
 vi.mock("@/lib/celebration", () => ({
   celebrateCorrect: mockCelebrateCorrect,
   celebrateCompletion: vi.fn(),
@@ -35,18 +49,19 @@ describe("Level 2 answer confirmation", () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+    promptMarker.current = "";
     vi.spyOn(Math, "random").mockReturnValue(0.999);
   });
 
-  it("reads a selected banknote and waits for confirmation before checking", async () => {
+  it("reads a selected coin and waits for confirmation before checking", async () => {
     const user = userEvent.setup();
     render(<Level2Page />);
 
     await user.click(
-      await screen.findByRole("button", { name: "เงิน 20 บาท" }),
+      await screen.findByRole("button", { name: "เงิน 10 บาท" }),
     );
     expect(mockCelebrateCorrect).not.toHaveBeenCalled();
-    expect(mockSpeakThai).toHaveBeenCalledWith("ธนบัตร 20 บาท");
+    expect(mockSpeakThai).toHaveBeenCalledWith("เหรียญ 10 บาท");
 
     await user.click(screen.getByRole("button", { name: "ยืนยันคำตอบ" }));
     expect(mockPlaySoundEffect).toHaveBeenLastCalledWith("correct");
@@ -60,12 +75,12 @@ describe("Level 2 answer confirmation", () => {
     const user = userEvent.setup();
     render(<Level2Page />);
 
-    const prompt = "นมสดกล่อง ราคา 20 บาท หนูจะเลือกเงินใบไหน?";
+    const prompt = "ไก่ทอด ราคา 10 บาท หนูจะเลือกเงินใบไหน?";
     await waitFor(() => expect(mockSpeakThai).toHaveBeenCalledWith(prompt));
-    await user.click(await screen.findByRole("button", { name: "เงิน 10 บาท" }));
+    await user.click(await screen.findByRole("button", { name: "เงิน 20 บาท" }));
     await user.click(screen.getByRole("button", { name: "ยืนยันคำตอบ" }));
 
-    const hint = "หานม 20 บาท เท่ากับ เงิน 20 บาทนะจ๊ะ";
+    const hint = "ไก่ทอด ราคา 10 บาท ให้เลือกเงิน 10 บาท";
     expect(screen.getByText(`💡 คำใบ้: ${hint}`)).toBeInTheDocument();
     expect(mockSpeakThai).toHaveBeenLastCalledWith(hint);
   });

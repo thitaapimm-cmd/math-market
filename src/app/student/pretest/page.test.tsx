@@ -24,6 +24,20 @@ vi.mock("@/lib/speech", () => ({
   speakThaiAndWait: mockSpeakThaiAndWait,
   playSoundEffect: mockPlaySoundEffect,
 }));
+const { promptMarker } = vi.hoisted(() => ({ promptMarker: { current: "" } }));
+vi.mock("@/lib/useLessonAudio", () => ({
+  useLessonAudio: (prompt: string, key: string, enabled: boolean) => {
+    if (enabled && promptMarker.current !== key) {
+      promptMarker.current = key;
+      mockSpeakThai(prompt);
+    }
+    return {
+      locked: false, audioUnavailable: false, isBusy: () => false,
+      replay: () => mockSpeakThai(prompt),
+      say: (text: string) => { mockSpeakThai(text); return mockSpeakThaiAndWait(text).then(() => "ended"); },
+    };
+  },
+}));
 vi.mock("@/lib/celebration", () => ({
   celebrateCorrect: vi.fn(),
   celebrateCompletion: vi.fn(),
@@ -37,6 +51,7 @@ describe("Pretest answer confirmation", () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+    promptMarker.current = "";
     mockSpeakThaiAndWait.mockResolvedValue(undefined);
     vi.spyOn(Math, "random").mockReturnValue(0.999);
   });
@@ -79,7 +94,7 @@ describe("Pretest answer confirmation", () => {
     render(<PretestPage />);
     await act(async () => undefined);
 
-    for (const answer of [10, 20, 20, 30, 30]) {
+    for (const answer of [10, 20, 10, 15, 25]) {
       await act(async () => vi.advanceTimersByTime(1000));
       fireEvent.click(screen.getByRole("button", { name: `${answer} บาท` }));
       fireEvent.click(screen.getByRole("button", { name: "ยืนยันคำตอบ" }));

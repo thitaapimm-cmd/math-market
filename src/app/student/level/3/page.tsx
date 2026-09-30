@@ -12,17 +12,20 @@ import {
   sumMoneyQuantities,
   type MoneyQuantities,
 } from "@/lib/money";
-import { playSoundEffect, speakThai } from "@/lib/speech";
+import { playSoundEffect } from "@/lib/speech";
+import { useLessonAudio } from "@/lib/useLessonAudio";
+import { SpeechStatus } from "@/components/common/SpeechStatus";
 import { api } from "@/lib/storage";
 import type { AttemptAnswer } from "@/types";
+import { productById } from "@/lib/catalog";
+import { ProductImage } from "@/components/common/ProductImage";
 
 const QUESTIONS = [
-  { id: "l3-1", item: "ขนมกล่องโต", price: 30, emoji: "🍪" },
-  { id: "l3-2", item: "สมุดระบายสี", price: 40, emoji: "🎨" },
-  { id: "l3-3", item: "น้ำผลไม้ปั่น", price: 25, emoji: "🍹" },
-  { id: "l3-4", item: "แซนด์วิช", price: 35, emoji: "🥪" },
-  { id: "l3-5", item: "กล่องดินสอ", price: 50, emoji: "✏️" },
-] as const;
+  "rom_fried_noodles", "coop_bento", "rom_fries", "coop_jelly", "coop_cola_icecream_5",
+].map((id, index) => {
+  const product = productById(id);
+  return { id: `l3-${index + 1}`, item: product.name, price: product.price, product };
+});
 
 const MONEY_VALUES = [5, 10, 20, 50] as const;
 
@@ -55,6 +58,7 @@ export default function Level3Page() {
 
   const currentQ = questions[index];
   const prompt = `${currentQ.item} ราคา ${currentQ.price} บาท เลือกเงินให้พอดี`;
+  const audio = useLessonAudio(prompt, currentQ.id, isMounted && Boolean(student));
   const totalSelected = sumMoneyQuantities(quantities);
 
   useEffect(() => {
@@ -65,7 +69,6 @@ export default function Level3Page() {
   useEffect(() => {
     if (!isMounted || !student) return;
     questionStartedAt.current = nowMs();
-    speakThai(prompt);
   }, [currentQ, isMounted, prompt, student]);
 
   const restartSession = () => {
@@ -80,7 +83,7 @@ export default function Level3Page() {
     sessionStartedAt.current = nowMs();
   };
 
-  const finishQuestion = (nextScore: number, nextAnswers: AttemptAnswer[]) => {
+  const finishQuestion = async (nextScore: number, nextAnswers: AttemptAnswer[]) => {
     setQuantities({});
     setQuestionWrongCount(0);
     setFeedback(null);
@@ -115,23 +118,23 @@ export default function Level3Page() {
     if (nextScore >= 4) {
       if (student) api.completeLevel(student.id, 3, nextScore);
       celebrateCompletion();
-      speakThai("ยอดเยี่ยมมาก! หนูรวมเงินซื้อของ 1 ชิ้นสำเร็จแล้ว");
+      await audio.say("ยอดเยี่ยมมาก! หนูรวมเงินซื้อของ 1 ชิ้นสำเร็จแล้ว");
       router.push("/student/path");
     } else {
-      speakThai("ลองอีกครั้งนะ รอบนี้ลองจ่ายให้ถูกตั้งแต่ครั้งแรกกัน");
+      await audio.say("ลองอีกครั้งนะ รอบนี้ลองจ่ายให้ถูกตั้งแต่ครั้งแรกกัน");
       restartSession();
     }
   };
 
   const handlePay = () => {
-    if (isChecking || totalSelected === 0) return;
+    if (isChecking || audio.isBusy() || totalSelected === 0) return;
 
     if (totalSelected !== currentQ.price) {
       playSoundEffect("wrong");
       const hint = `เลือกเงินให้ครบ ${currentQ.price} บาทพอดีนะ`;
       setFeedback(hint);
       setQuestionWrongCount((count) => count + 1);
-      speakThai(hint);
+      void audio.say(hint);
       return;
     }
 
@@ -156,33 +159,28 @@ export default function Level3Page() {
     playSoundEffect("correct");
     celebrateCorrect();
     setFeedback(`ถูกต้อง! ${formatMoneyEquation(quantities)}`);
-    speakThai(`ถูกต้อง! รวมได้ ${totalSelected} บาท จ่ายเงินสำเร็จ`);
-    setTimeout(() => finishQuestion(nextScore, nextAnswers), 1800);
+    void audio.say("ถูกต้อง เก่งมาก").then((result) => { if (result !== "cancelled") void finishQuestion(nextScore, nextAnswers); });
   };
 
   return (
     <div className="min-h-screen bg-amber-50 p-6 flex flex-col items-center">
       <HeaderNav title="Level 3: ซื้อสินค้า 1 ชิ้น" backUrl="/student/path" />
 
-      <div className="w-full max-w-2xl bg-white rounded-3xl p-6 shadow-xl border-4 border-amber-400 text-center">
+      <div className="w-full max-w-6xl bg-white rounded-3xl p-5 sm:p-6 shadow-xl border-4 border-amber-400 text-center">
         <div className="mb-3 font-bold text-slate-500">
           ข้อที่ {index + 1} จาก {questions.length}
         </div>
-        <div className="p-4 bg-amber-100/50 rounded-2xl mb-4">
-          <div className="text-6xl">{currentQ.emoji}</div>
+        <SpeechStatus locked={audio.locked} unavailable={audio.audioUnavailable} onReplay={audio.replay} />
+        <div className="lg:grid lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center lg:gap-8">
+        <div className="p-4 bg-amber-100/50 rounded-2xl mb-4 lg:mb-0">
+          <ProductImage product={currentQ.product} size={112} />
           <h2 className="text-2xl font-black text-slate-800">{currentQ.item}</h2>
           <div className="text-3xl font-black text-amber-700">
             ราคา {currentQ.price} บาท
           </div>
         </div>
 
-        <div className="p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl mb-5">
-          <div className="text-sm font-bold text-slate-500 mb-1">เงินที่หนูเลือก:</div>
-          <div className="text-2xl font-black text-slate-800">
-            {formatMoneyEquation(quantities)}
-          </div>
-        </div>
-
+        <div className="min-w-0">
         {feedback && (
           <div role="status" className="p-3 bg-amber-100 border-2 border-amber-500 text-amber-900 rounded-2xl mb-4 font-bold text-lg">
             {feedback}
@@ -194,22 +192,25 @@ export default function Level3Page() {
           <MoneyQuantitySelector
             values={MONEY_VALUES}
             quantities={quantities}
+            showSelectedTray
             onChange={(next) => {
               setQuantities(next);
               setFeedback(null);
             }}
-            disabled={isChecking}
+            disabled={isChecking || audio.locked}
           />
         </div>
 
         <button
           type="button"
           onClick={handlePay}
-          disabled={totalSelected === 0 || isChecking}
+          disabled={totalSelected === 0 || isChecking || audio.locked}
           className="w-full py-5 bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-2xl rounded-2xl shadow-lg active:scale-95 transition-all disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           จ่ายเงิน
         </button>
+        </div>
+        </div>
       </div>
     </div>
   );

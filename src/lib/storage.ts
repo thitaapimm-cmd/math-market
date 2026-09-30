@@ -7,76 +7,9 @@ import {
   AssessmentResult,
 } from "@/types";
 import { isStudentAvatarPresetPath } from "@/lib/studentAvatars";
+import { PRODUCTS, SHOPS } from "@/lib/catalog";
 
 const INITIAL_STUDENTS: Student[] = [];
-
-const INITIAL_SHOPS: Shop[] = [
-  {
-    id: "shop_rom",
-    name: "ร้านค้าป้ารม",
-    description: "ขนม เครื่องดื่ม และของกินแสนอร่อย",
-    image_url: "🏪",
-    active: true,
-  },
-  {
-    id: "shop_coop",
-    name: "สหกรณ์โรงเรียน",
-    description: "อุปกรณ์การเรียน เครื่องเขียน และนมโรงเรียน",
-    image_url: "🏫",
-    active: true,
-  },
-];
-
-const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: "p_milk",
-    name: "นมสดกล่อง",
-    price: 20,
-    emoji: "🥛",
-    active: true,
-    shop_ids: ["shop_rom", "shop_coop"],
-  },
-  {
-    id: "p_bread",
-    name: "ขนมปัง",
-    price: 10,
-    emoji: "🍞",
-    active: true,
-    shop_ids: ["shop_rom"],
-  },
-  {
-    id: "p_juice",
-    name: "น้ำส้มคั้น",
-    price: 20,
-    emoji: "🧃",
-    active: true,
-    shop_ids: ["shop_rom"],
-  },
-  {
-    id: "p_snack",
-    name: "ขนมกรุบกรอบ",
-    price: 10,
-    emoji: "🍪",
-    active: true,
-    shop_ids: ["shop_rom", "shop_coop"],
-  },
-  {
-    id: "p_pencil",
-    name: "ดินสอดำ",
-    price: 10,
-    emoji: "✏️",
-    active: true,
-    shop_ids: ["shop_coop"],
-  },
-  {
-    id: "p_notebook",
-    name: "สมุดเขียน",
-    price: 20,
-    emoji: "📓",
-    active: true,
-    shop_ids: ["shop_coop"],
-  },
-];
 
 export const getStorageData = <T>(key: string, defaultValue: T): T => {
   if (typeof window === "undefined") return defaultValue;
@@ -171,8 +104,8 @@ export const api = {
     }
   },
 
-  getShops: (): Shop[] => getStorageData("shops", INITIAL_SHOPS),
-  getProducts: (): Product[] => getStorageData("products", INITIAL_PRODUCTS),
+  getShops: (): Shop[] => SHOPS,
+  getProducts: (): Product[] => PRODUCTS,
 
   getProgress: (studentId: string): StudentProgress[] => {
     const all = getStorageData<StudentProgress[]>("progress", []);
@@ -227,6 +160,8 @@ export const api = {
   },
 
   completeLevel: (studentId: string, level: number, score: number) => {
+    // A learner may open a level directly before visiting the path page.
+    api.getProgress(studentId);
     const all = getStorageData<StudentProgress[]>("progress", []);
     const updated = all.map((p) => {
       if (p.student_id === studentId && p.level === level) {

@@ -109,6 +109,22 @@ describe("api attempts", () => {
   });
 });
 
+describe("api.completeLevel", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("records completion when a learner opened the level before the path page", () => {
+    api.completeLevel("student-1", 1, 5);
+
+    const progress = api.getProgress("student-1");
+    expect(progress.find((item) => item.level === 1)).toEqual(
+      expect.objectContaining({ status: "completed", best_score: 5 }),
+    );
+    expect(progress.find((item) => item.level === 2)).toEqual(
+      expect.objectContaining({ status: "in_progress" }),
+    );
+  });
+});
+
 describe("api.deleteStudent", () => {
   beforeEach(() => localStorage.clear());
 

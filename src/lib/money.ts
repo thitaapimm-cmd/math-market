@@ -86,3 +86,9 @@ export function formatMoneyEquation(quantities: MoneyQuantities): string {
   const total = sumMoneyQuantities(quantities);
   return parts.length === 0 ? "0 บาท" : `${parts.join(" + ")} = ${total} บาท`;
 }
+
+export function formatExpandedMoneyEquation(quantities: MoneyQuantities): string {
+  const values = expandMoneyQuantities(quantities);
+  const total = sumMoneyQuantities(quantities);
+  return values.length === 0 ? "0 บาท" : `${values.join(" + ")} = ${total} บาท`;
+}

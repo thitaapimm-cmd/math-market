@@ -3,15 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Level1Page from "./page";
 
-const { mockPlaySoundEffect, mockSpeakThai, mockCelebrateCorrect } = vi.hoisted(
+const { mockPlaySoundEffect, mockSpeakThai, mockCelebrateCorrect, mockRouterPush } = vi.hoisted(
   () => ({
     mockPlaySoundEffect: vi.fn(),
     mockSpeakThai: vi.fn(),
     mockCelebrateCorrect: vi.fn(),
+    mockRouterPush: vi.fn(),
   }),
 );
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mockRouterPush }) }));
 vi.mock("@/lib/storage", () => ({
   api: {
     getCurrentStudent: () => ({ id: "student-1", name: "ทดสอบ" }),
@@ -22,6 +23,20 @@ vi.mock("@/lib/storage", () => ({
 vi.mock("@/lib/speech", () => ({
   speakThai: mockSpeakThai,
   playSoundEffect: mockPlaySoundEffect,
+}));
+const { promptMarker } = vi.hoisted(() => ({ promptMarker: { current: "" } }));
+vi.mock("@/lib/useLessonAudio", () => ({
+  useLessonAudio: (prompt: string, key: string, enabled: boolean) => {
+    if (enabled && promptMarker.current !== key) {
+      promptMarker.current = key;
+      mockSpeakThai(prompt);
+    }
+    return {
+      locked: false, audioUnavailable: false, isBusy: () => false,
+      replay: () => mockSpeakThai(prompt),
+      say: (text: string) => { mockSpeakThai(text); return Promise.resolve("ended"); },
+    };
+  },
 }));
 vi.mock("@/lib/celebration", () => ({
   celebrateCorrect: mockCelebrateCorrect,
@@ -35,6 +50,7 @@ describe("Level 1 answer confirmation", () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+    promptMarker.current = "";
     vi.spyOn(Math, "random").mockReturnValue(0.999);
   });
 
@@ -68,5 +84,23 @@ describe("Level 1 answer confirmation", () => {
     const hint = "สังเกตตัวเลข 10 บนเหรียญนะจ๊ะ";
     expect(screen.getByText(`💡 คำใบ้: ${hint}`)).toBeInTheDocument();
     expect(mockSpeakThai).toHaveBeenLastCalledWith(hint);
+  });
+
+  it("uses five distinct denominations and returns to the path after question five", async () => {
+    const user = userEvent.setup();
+    render(<Level1Page />);
+
+    for (const [position, value] of [10, 20, 50, 100, 5].entries()) {
+      await screen.findByRole("button", { name: `เงิน ${value} บาท` });
+      expect(screen.getByText(`ข้อที่ ${position + 1} จาก 5`)).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: `${value} บาท` }));
+      await user.click(screen.getByRole("button", { name: "ยืนยันคำตอบ" }));
+      if (position < 4) {
+        await screen.findByText(`ข้อที่ ${position + 2} จาก 5`);
+      }
+    }
+
+    await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith("/student/path"));
+    expect(mockSpeakThai).toHaveBeenCalledWith("เยี่ยมมาก! หนูรู้จักเงินแล้ว ปลดล็อกด่านที่ 2 แล้วจ้า");
   });
 });

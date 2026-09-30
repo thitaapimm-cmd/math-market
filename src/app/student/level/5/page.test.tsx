@@ -3,12 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Level5Page from "./page";
 
-const { mockRecordAttempt, mockSpeakThai } = vi.hoisted(() => ({
+const { mockRecordAttempt, mockSpeakThai, mockRouterPush } = vi.hoisted(() => ({
   mockRecordAttempt: vi.fn(),
   mockSpeakThai: vi.fn(),
+  mockRouterPush: vi.fn(),
 }));
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mockRouterPush }) }));
 vi.mock("@/lib/storage", () => ({
   api: {
     getCurrentStudent: () => ({ id: "s1", name: "เด็ก" }),
@@ -17,18 +18,32 @@ vi.mock("@/lib/storage", () => ({
       { id: "shop_coop", name: "สหกรณ์โรงเรียน", description: "", image_url: "🏫", active: true },
     ],
     getProducts: () => [
-      { id: "p_milk", name: "นมสดกล่อง", price: 20, emoji: "🥛", active: true, shop_ids: ["shop_rom", "shop_coop"] },
-      { id: "p_bread", name: "ขนมปัง", price: 10, emoji: "🍞", active: true, shop_ids: ["shop_rom"] },
-      { id: "p_juice", name: "น้ำส้มคั้น", price: 20, emoji: "🧃", active: true, shop_ids: ["shop_rom"] },
-      { id: "p_snack", name: "ขนมกรุบกรอบ", price: 10, emoji: "🍪", active: true, shop_ids: ["shop_rom", "shop_coop"] },
-      { id: "p_pencil", name: "ดินสอดำ", price: 10, emoji: "✏️", active: true, shop_ids: ["shop_coop"] },
-      { id: "p_notebook", name: "สมุดเขียน", price: 20, emoji: "📓", active: true, shop_ids: ["shop_coop"] },
+      { id: "rom_fried_noodles", name: "ผัดมาม่า", price: 15, emoji: "🍜", active: true, shop_ids: ["shop_rom"] },
+      { id: "rom_fried_chicken", name: "ไก่ทอด", price: 10, emoji: "🍗", active: true, shop_ids: ["shop_rom"] },
+      { id: "rom_thai_tea", name: "ชาไทย", price: 10, emoji: "🧋", active: true, shop_ids: ["shop_rom"] },
+      { id: "coop_oreo", name: "โอรีโอ้", price: 5, emoji: "🍪", active: true, shop_ids: ["shop_coop"] },
+      { id: "coop_pocky", name: "ป๊อกกี้", price: 20, emoji: "🍫", active: true, shop_ids: ["shop_coop"] },
+      { id: "coop_cookie", name: "คุกกี้", price: 5, emoji: "🍪", active: true, shop_ids: ["shop_coop"] },
     ],
     recordAttempt: mockRecordAttempt,
     completeLevel: vi.fn(),
   },
 }));
 vi.mock("@/lib/speech", () => ({ speakThai: mockSpeakThai, playSoundEffect: vi.fn() }));
+const { promptMarker } = vi.hoisted(() => ({ promptMarker: { current: "" } }));
+vi.mock("@/lib/useLessonAudio", () => ({
+  useLessonAudio: (prompt: string, key: string, enabled: boolean) => {
+    if (enabled && promptMarker.current !== key) {
+      promptMarker.current = key;
+      mockSpeakThai(prompt);
+    }
+    return {
+      locked: false, audioUnavailable: false, isBusy: () => false,
+      replay: () => mockSpeakThai(prompt),
+      say: (text: string) => { mockSpeakThai(text); return Promise.resolve("ended"); },
+    };
+  },
+}));
 vi.mock("@/lib/celebration", () => ({ celebrateCompletion: vi.fn(), celebrateCorrect: vi.fn() }));
 
 const completeRound = async (shop: string, products: string[], paymentClicks: number[]) => {
@@ -55,6 +70,7 @@ describe("Level 5 hybrid shopping", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    promptMarker.current = "";
     vi.spyOn(Math, "random").mockReturnValue(0.999);
   });
 
@@ -64,7 +80,7 @@ describe("Level 5 hybrid shopping", () => {
     expect(await screen.findByText("ข้อที่ 1 จาก 5")).toBeInTheDocument();
     await waitFor(() =>
       expect(mockSpeakThai).toHaveBeenCalledWith(
-        "ไปร้านค้าป้ารม แล้วเลือกขนมปัง ราคา 10 บาท",
+        "ไปร้านค้าป้ารม แล้วเลือกผัดมาม่า ราคา 15 บาท",
       ),
     );
     expect(screen.getByText("เลือกร้านให้ตรงกับโจทย์")).toBeInTheDocument();
@@ -75,22 +91,23 @@ describe("Level 5 hybrid shopping", () => {
     render(<Level5Page />);
     await act(async () => undefined);
 
-    await completeRound("ร้านค้าป้ารม", ["ขนมปัง"], [10]);
-    await completeRound("สหกรณ์โรงเรียน", ["สมุดเขียน"], [20]);
-    await completeRound("ร้านค้าป้ารม", ["น้ำส้มคั้น", "ขนมกรุบกรอบ"], [20, 10]);
-    await completeRound("สหกรณ์โรงเรียน", ["ดินสอดำ", "นมสดกล่อง"], [20, 10]);
+    await completeRound("ร้านค้าป้ารม", ["ผัดมาม่า"], [10, 5]);
+    await completeRound("สหกรณ์โรงเรียน", ["โอรีโอ้"], [5]);
+    await completeRound("ร้านค้าป้ารม", ["ไก่ทอด", "ชาไทย"], [20]);
+    await completeRound("สหกรณ์โรงเรียน", ["ป๊อกกี้", "คุกกี้"], [20, 5]);
 
     expect(screen.getByText("รอบเลือกซื้อเอง")).toBeInTheDocument();
     expect(screen.getByText("หนูเลือกร้านและสินค้าที่อยากซื้อเองได้เลย")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "เลือกร้าน สหกรณ์โรงเรียน" }));
     fireEvent.click(screen.getByRole("button", { name: "ยืนยันร้าน" }));
-    expect(screen.queryByText("ขนมปัง")).not.toBeInTheDocument();
+    expect(screen.queryByText("ผัดมาม่า")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /เลือกสินค้า สมุดเขียน/ }));
+    fireEvent.click(screen.getByRole("button", { name: /เลือกสินค้า โอรีโอ้/ }));
     fireEvent.click(screen.getByRole("button", { name: "ยืนยันสินค้า" }));
-    expect(screen.getByText("ยอดที่ต้องจ่าย 20 บาท")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "เพิ่มธนบัตร 20 บาท" }));
+    expect(screen.getByText("ยอดที่ต้องจ่าย 5 บาท")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "เพิ่มเหรียญ 5 บาท" }));
+    expect(screen.getByText("5 = 5 บาท")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "จ่ายเงิน" }));
     await act(async () => vi.advanceTimersByTime(1400));
 
@@ -109,6 +126,7 @@ describe("Level 5 hybrid shopping", () => {
         ]),
       }),
     );
+    await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith("/student/complete"));
   });
 
   it("exposes the selected shop clearly", async () => {

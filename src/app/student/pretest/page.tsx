@@ -2,63 +2,28 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/storage";
-import { speakThai, speakThaiAndWait, playSoundEffect } from "@/lib/speech";
+import { playSoundEffect, speakThai } from "@/lib/speech";
+import { useLessonAudio } from "@/lib/useLessonAudio";
+import { SpeechStatus } from "@/components/common/SpeechStatus";
 import { MoneyCard } from "@/components/common/MoneyCard";
 import { HeaderNav } from "@/components/common/HeaderNav";
 import { celebrateCompletion, celebrateCorrect } from "@/lib/celebration";
 import { getMoneySpeech, type MoneyValue } from "@/lib/money";
 import { nowMs, secondsBetween, shuffleQuestions } from "@/lib/learningSession";
 import type { AttemptAnswer } from "@/types";
+import { productById } from "@/lib/catalog";
+import { ProductImage } from "@/components/common/ProductImage";
 
+const matchProduct = productById("rom_fried_chicken");
+const sumProduct = productById("rom_fried_noodles");
+const pairProducts = [productById("coop_pocky"), productById("coop_cookie")];
+const pairTotal = pairProducts.reduce((total, product) => total + product.price, 0);
 const QUESTIONS = [
-  {
-    id: "q1",
-    type: "identify",
-    money: 10,
-    question: "นี่คือเงินกี่บาท?",
-    options: [5, 10, 20],
-    correct: 10,
-    hint: "สังเกตตัวเลข 10 บนเหรียญนะจ๊ะ",
-  },
-  {
-    id: "q2",
-    type: "identify",
-    money: 20,
-    question: "ธนบัตรนี้มีค่ากี่บาท?",
-    options: [20, 50, 100],
-    correct: 20,
-    hint: "ธนบัตรสีเขียวมีเลข 20 อยู่ตรงมุม",
-  },
-  {
-    id: "q3",
-    type: "match",
-    item: "นมสดกล่อง",
-    price: 20,
-    question: "ถ้าจะซื้อนม 20 บาท ควรเลือกเงินใบไหน?",
-    options: [10, 20, 50],
-    correct: 20,
-    hint: "ราคาสินค้า 20 บาท ให้เลือกเงินที่มีค่า 20 บาท",
-  },
-  {
-    id: "q4",
-    type: "sum",
-    item: "ขนมปังเนย",
-    price: 30,
-    question: "ขนมราคา 30 บาท ต้องใช้เงินรวมกันกี่บาท?",
-    options: [20, 30, 40],
-    correct: 30,
-    hint: "ลองรวม 20 บาท กับ 10 บาท จะได้ 30 บาท",
-  },
-  {
-    id: "q5",
-    type: "sum",
-    item: "นม (20) + ขนม (10)",
-    price: 30,
-    question: "นม 20 บาท กับ ขนม 10 บาท รวมเป็นกี่บาท?",
-    options: [20, 30, 50],
-    correct: 30,
-    hint: "นม 20 บาท บวกขนม 10 บาท รวมเป็น 30 บาท",
-  },
+  { id: "q1", type: "identify", money: 10, question: "นี่คือเงินกี่บาท?", options: [5, 10, 20], correct: 10, hint: "สังเกตตัวเลข 10 บนเหรียญนะจ๊ะ" },
+  { id: "q2", type: "identify", money: 20, question: "ธนบัตรนี้มีค่ากี่บาท?", options: [20, 50, 100], correct: 20, hint: "ธนบัตรสีเขียวมีเลข 20 อยู่ตรงมุม" },
+  { id: "q3", type: "match", product: matchProduct, item: matchProduct.name, price: matchProduct.price, question: `ถ้าจะซื้อ${matchProduct.name} ${matchProduct.price} บาท ควรเลือกเงินใด?`, options: [5, 10, 20], correct: matchProduct.price, hint: `ราคาสินค้า ${matchProduct.price} บาท ให้เลือกเงินที่มีค่า ${matchProduct.price} บาท` },
+  { id: "q4", type: "sum", product: sumProduct, item: sumProduct.name, price: sumProduct.price, question: `${sumProduct.name} ราคา ${sumProduct.price} บาท ต้องใช้เงินรวมกันกี่บาท?`, options: [10, 15, 20], correct: sumProduct.price, hint: `ลองรวม 10 บาท กับ 5 บาท จะได้ ${sumProduct.price} บาท` },
+  { id: "q5", type: "sum", products: pairProducts, item: pairProducts.map((p) => p.name).join(" + "), price: pairTotal, question: `${pairProducts[0].name} ${pairProducts[0].price} บาท กับ ${pairProducts[1].name} ${pairProducts[1].price} บาท รวมเป็นกี่บาท?`, options: [15, 20, 25], correct: pairTotal, hint: `${pairProducts[0].name} ${pairProducts[0].price} บาท บวก${pairProducts[1].name} ${pairProducts[1].price} บาท รวมเป็น ${pairTotal} บาท` },
 ] as const;
 
 export default function PretestPage() {
@@ -88,6 +53,7 @@ export default function PretestPage() {
   }, []);
 
   const currentQ = questions[currentIndex];
+  const audio = useLessonAudio(currentQ.question, currentQ.id, isMounted && Boolean(student));
 
   useEffect(() => {
     if (!isMounted) return;
@@ -96,26 +62,22 @@ export default function PretestPage() {
     }
   }, [isMounted, router, student]);
 
-  useEffect(() => {
-    if (!isMounted || !student) return;
-    questionStartedAt.current = nowMs();
-    speakThai(currentQ.question);
-  }, [currentQ, isMounted, student]);
+  useEffect(() => { questionStartedAt.current = nowMs(); }, [currentQ]);
 
   const selectAnswer = (choice: number) => {
-    if (isChecking) return;
+    if (isChecking || audio.isBusy()) return;
     playSoundEffect("click");
     setSelectedAnswer(choice);
     setFeedback(null);
+    // Reading a selected choice must never keep the confirm button locked.
+    // Totals such as 15 baht have no recorded denomination, so leave them visual.
     if ([1, 2, 5, 10, 20, 50, 100].includes(choice)) {
       speakThai(getMoneySpeech(choice as MoneyValue));
-    } else {
-      speakThai(`${choice} บาท`);
     }
   };
 
   const confirmAnswer = async () => {
-    if (selectedAnswer === null || isChecking) return;
+    if (selectedAnswer === null || isChecking || audio.isBusy()) return;
 
     const q = currentQ;
     const isCorrect = selectedAnswer === q.correct;
@@ -142,7 +104,7 @@ export default function PretestPage() {
 
     const resultText = isCorrect ? "ถูกต้อง เก่งมาก" : `💡 คำใบ้: ${q.hint}`;
     setFeedback(resultText);
-    await speakThaiAndWait(isCorrect ? "ถูกต้อง เก่งมาก" : q.hint);
+    await audio.say(isCorrect ? "ถูกต้อง เก่งมาก" : q.hint);
 
     setSelectedAnswer(null);
     setFeedback(null);
@@ -180,7 +142,7 @@ export default function PretestPage() {
       });
     }
     celebrateCompletion();
-    speakThai("เก่งมาก พร้อมเริ่มเรียนแล้ว!");
+    await audio.say("เก่งมาก พร้อมเริ่มเรียนแล้ว!");
     router.push("/student/path");
   };
 
@@ -199,15 +161,16 @@ export default function PretestPage() {
         <h2 className="text-2xl font-black text-slate-800 mb-6">
           {currentQ?.question}
         </h2>
+        <SpeechStatus locked={audio.locked} unavailable={audio.audioUnavailable} onReplay={audio.replay} />
 
         {/* Question Target Display */}
         <div className="flex justify-center mb-8">
           {currentQ.type === "identify" && (
-            <MoneyCard value={currentQ.money || 10} speakOnClick />
+            <MoneyCard value={currentQ.money || 10} disabled={audio.locked || isChecking} onClick={() => { void audio.say(getMoneySpeech((currentQ.money || 10) as MoneyValue)); }} />
           )}
           {currentQ.type === "match" && (
             <div className="p-4 bg-amber-50 rounded-2xl border-2 border-amber-300">
-              <div className="text-5xl mb-2">🥛</div>
+              <ProductImage product={currentQ.product} size={96} />
               <div className="text-2xl font-bold text-slate-800">
                 {currentQ.item}
               </div>
@@ -218,7 +181,7 @@ export default function PretestPage() {
           )}
           {currentQ.type === "sum" && (
             <div className="p-4 bg-orange-50 rounded-2xl border-2 border-orange-300">
-              <div className="text-4xl mb-2">🧺</div>
+              <div className="flex justify-center gap-2">{"products" in currentQ ? currentQ.products.map((product) => <ProductImage key={product.id} product={product} size={80} />) : <ProductImage product={currentQ.product} size={96} />}</div>
               <div className="text-2xl font-bold text-slate-800">
                 {currentQ.item}
               </div>
@@ -233,7 +196,7 @@ export default function PretestPage() {
               key={opt}
               type="button"
               aria-pressed={selectedAnswer === opt}
-              disabled={isChecking}
+              disabled={isChecking || audio.locked}
               onClick={() => selectAnswer(opt)}
               className={`py-5 border-4 rounded-2xl text-2xl font-black text-sky-900 active:scale-95 transition-all shadow ${
                 selectedAnswer === opt
@@ -261,7 +224,7 @@ export default function PretestPage() {
           <button
             type="button"
             onClick={confirmAnswer}
-            disabled={selectedAnswer === null || isChecking}
+            disabled={selectedAnswer === null || isChecking || audio.locked}
             className="rounded-2xl bg-sky-600 px-8 py-4 text-xl font-black text-white shadow-lg transition-all hover:bg-sky-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-300">
             ยืนยันคำตอบ
           </button>
