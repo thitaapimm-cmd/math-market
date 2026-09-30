@@ -288,7 +288,9 @@ describe("Thai audio", () => {
       resume: vi.fn().mockResolvedValue(undefined),
       close: vi.fn(),
     };
-    const AudioContextMock = vi.fn(() => context);
+    const AudioContextMock = vi.fn(function AudioContextMock() {
+      return context;
+    });
     vi.stubGlobal("AudioContext", AudioContextMock);
 
     const { playSoundEffect } = await import("./speech");
